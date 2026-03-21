@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diamond Inventory - Fixed Scanner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f0f2f5; padding: 10px; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
+        
+        .employee-bar { background: #2c3e50; color: white; padding: 10px 20px; display: flex; align-items: center; gap: 15px; font-size: 14px; }
+        .employee-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 5px 10px; border-radius: 4px; outline: none; flex: 1; }
+
+        .header { background: linear-gradient(135deg, #1a2a6c, #b21f1f); color: white; padding: 15px; text-align: center; }
+        
+        /* Fixed Scanner Styles */
+        #scanner-container { display: none; position: relative; width: 100%; height: 300px; background: #000; }
+        #scanner-container video { width: 100%; height: 100%; object-fit: cover; }
+        .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 40%; border: 2px solid #2ecc71; box-shadow: 0 0 0 2000px rgba(0,0,0,0.5); pointer-events: none; }
+
+        .form-section { padding: 20px; background: #fafafa; border-bottom: 1px solid #eee; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 15px; }
+        label { font-size: 11px; color: #777; font-weight: bold; text-transform: uppercase; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-top: 5px; font-size: 14px; }
+        
+        #manualPrice { background: #fff9e6; border: 1px solid #f39c12; font-weight: bold; }
+
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .add-btn { flex: 2; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; min-width: 150px; }
+        .scan-btn { flex: 1; background: #3498db; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .update-btn { flex: 2; background: #f39c12; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; display: none; }
+
+        .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); background: #fff; padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
+        .stat-item span { display: block; font-size: 18px; font-weight: bold; color: #1a2a6c; }
+        
+        .table-section { padding: 15px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { text-align: left; padding: 12px; background: #f8f9fa; font-size: 11px; border-bottom: 2px solid #dee2e6; }
+        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+        .emp-badge { background: #e1e8ed; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="employee-bar">
+        <span>👤 Employee:</span>
+        <input type="text" id="employeeName" class="employee-input" placeholder="Enter Name">
+        <span id="liveClock" style="font-size: 11px; opacity: 0.8;"></span>
+    </div>
+
+    <div class="header"><h2>Diamond Inventory</h2></div>
+
+    <div id="scanner-container">
+        <div class="scanner-overlay"></div>
+        <button onclick="stopScanner()" style="position: absolute; top: 10px; right: 10px; z-index: 100; background: red; color: white; border: none; padding: 8px 15px; border-radius: 5px;">CLOSE</button>
+    </div>
+
+    <input type="file" id="fileScanner" accept="image/*" capture="environment" style="display: none;" onchange="decodeImage(this)">
+
+    <div class="form-section">
+        <input type="hidden" id="edit-id">
+        <div class="form-grid">
+            <div><label>Date</label><input type="date" id="entryDate"></div>
+            <div><label>Barcode</label><input type="text" id="barcode" placeholder="Scan result here"></div>
+            <div><label>Weight (ct)</label><input type="number" id="weight" step="0.01" oninput="suggestPrice()"></div>
+            <div><label>Cut</label><select id="cut" onchange="suggestPrice()"><option value="Ex">Excellent</option><option value="VG">Very Good</option></select></div>
+            <div><label>Shape</label><select id="shape"><option value="PN">PN</option><option value="MQ">MQ</option><option value="OVL">OVL</option><option value="RD">Round</option></select></div>
+            <div><label>Price/ct (₹)</label><input type="number" id="manualPrice"></div>
+        </div>
+        <div class="btn-row">
+            <button class="scan-btn" onclick="startScanner()">📷 SCAN BARCODE</button>
+            <button class="add-btn" id="add-btn" onclick="saveEntry()">➕ ADD ENTRY</button>
+            <button class="update-btn" id="update-btn" onclick="saveEntry(true)">💾 UPDATE</button>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-item"><span id="totalItems">0</span><label>STONES</label></div>
+        <div class="stat-item"><span id="sumWeight">0.00</span><label>TOTAL WT</label></div>
+        <div class="stat-item"><span id="totalVal">₹0</span><label>TOTAL VAL</label></div>
+    </div>
+
+    <div class="table-section">
+        <table id="invTable">
+            <thead><tr><th>Date</th><th>Employee</th><th>Barcode</th><th>Detail</th><th>Wt</th><th>Total</th><th>Action</th></tr></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let db;
+    document.getElementById('entryDate').valueAsDate = new Date();
+
+    // Database Setup
+    const request = indexedDB.open('DiamondFixedDB', 1);
+    request.onupgradeneeded = e => e.target.result.createObjectStore('inventory', { keyPath: 'id', autoIncrement: true });
+    request.onsuccess = e => { db = e.target.result; renderData(); };
+
+    // Scanner logic with Fallback
+    function startScanner() {
+        // If not HTTPS or Localhost, Chrome WILL block the camera.
+        const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        
+        if (!isSecure) {
+            alert("Security Notice: Live camera requires HTTPS. Opening 'Photo Mode' instead.");
+            document.getElementById('fileScanner').click();
+            return;
+        }
+
+        const container = document.getElementById('scanner-container');
+        container.style.display = 'block';
+
+        Quagga.init({
+            inputStream: { name: "Live", type: "LiveStream", target: container, constraints: { facingMode: "environment" } },
+            decoder: { readers: ["code_128_reader", "ean_reader", "upc_reader"] }
+        }, (err) => {
+            if (err) {
+                console.error(err);
+                alert("Live Camera Error. Switching to Photo Mode.");
+                stopScanner();
+                document.getElementById('fileScanner').click();
+                return;
+            }
+            Quagga.start();
+        });
+
+        Quagga.onDetected(res => {
+            document.getElementById('barcode').value = res.codeResult.code;
+            if (navigator.vibrate) navigator.vibrate(200);
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        Quagga.stop();
+        document.getElementById('scanner-container').style.display = 'none';
+    }
+
+    // Photo Scanner Logic (Fallback)
+    function decodeImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                Quagga.decodeSingle({
+                    src: e.target.result,
+                    decoder: { readers: ["code_128_reader", "ean_reader", "upc_reader"] }
+                }, (result) => {
+                    if (result && result.codeResult) {
+                        document.getElementById('barcode').value = result.codeResult.code;
+                        alert("Barcode Found: " + result.codeResult.code);
+                    } else {
+                        alert("Could not read barcode from photo. Please try a clearer picture or enter manually.");
+                    }
+                });
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function suggestPrice() {
+        const cut = document.getElementById('cut').value;
+        const wt = parseFloat(document.getElementById('weight').value) || 0;
+        let p = (cut === 'Ex') ? (wt < 2 ? 1250 : (wt < 3 ? 1130 : 1030)) : (wt < 2 ? 800 : 750);
+        document.getElementById('manualPrice').value = p;
+    }
+
+    function saveEntry(isUpdate = false) {
+        const emp = document.getElementById('employeeName').value;
+        const bar = document.getElementById('barcode').value;
+        const wt = parseFloat(document.getElementById('weight').value);
+        const price = parseFloat(document.getElementById('manualPrice').value);
+        if (!emp || !bar || isNaN(wt)) return alert("Fill Name, Barcode and Weight!");
+
+        const entry = {
+            date: document.getElementById('entryDate').value,
+            emp, barcode: bar, weight: wt,
+            cut: document.getElementById('cut').value,
+            shape: document.getElementById('shape').value,
+            price, total: wt * price
+        };
+
+        const tx = db.transaction('inventory', 'readwrite');
+        const store = tx.objectStore('inventory');
+        if (isUpdate) { entry.id = parseInt(document.getElementById('edit-id').value); store.put(entry); }
+        else { store.add(entry); }
+        tx.oncomplete = () => { resetForm(); renderData(); };
+    }
+
+    function renderData() {
+        const tx = db.transaction('inventory', 'readonly');
+        tx.objectStore('inventory').getAll().onsuccess = e => {
+            const data = e.target.result;
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            let tW = 0, tV = 0;
+            data.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(item => {
+                tW += item.weight; tV += item.total;
+                tbody.innerHTML += `<tr>
+                    <td style="font-size:10px">${item.date}</td>
+                    <td><span class="emp-badge">${item.emp}</span></td>
+                    <td><b>${item.barcode}</b></td>
+                    <td>${item.shape}/${item.cut}</td>
+                    <td>${item.weight}</td>
+                    <td>₹${item.total.toLocaleString()}</td>
+                    <td><button onclick="startEdit(${item.id})">✏️</button></td>
+                </tr>`;
+            });
+            document.getElementById('totalItems').innerText = data.length;
+            document.getElementById('sumWeight').innerText = tW.toFixed(2);
+            document.getElementById('totalVal').innerText = '₹' + tV.toLocaleString();
+        };
+    }
+
+    function startEdit(id) {
+        const tx = db.transaction('inventory', 'readonly');
+        tx.objectStore('inventory').get(id).onsuccess = e => {
+            const i = e.target.result;
+            document.getElementById('edit-id').value = i.id;
+            document.getElementById('barcode').value = i.barcode;
+            document.getElementById('weight').value = i.weight;
+            document.getElementById('manualPrice').value = i.price;
+            document.getElementById('employeeName').value = i.emp;
+            document.getElementById('add-btn').style.display = 'none';
+            document.getElementById('update-btn').style.display = 'block';
+            window.scrollTo(0,0);
+        };
+    }
+
+    function resetForm() {
+        document.getElementById('barcode').value = '';
+        document.getElementById('weight').value = '';
+        document.getElementById('add-btn').style.display = 'block';
+        document.getElementById('update-btn').style.display = 'none';
+    }
+
+    setInterval(() => { document.getElementById('liveClock').innerText = new Date().toLocaleString(); }, 1000);
+</script>
+</body>
+</html>
