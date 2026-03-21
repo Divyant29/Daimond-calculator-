@@ -3,88 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diamond Inventory - Fixed Scanner</title>
+    <title>Diamond Inventory Pro v7</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: #f0f2f5; padding: 10px; color: #333; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
+        :root { --primary: #1a2a6c; --secondary: #b21f1f; --success: #27ae60; --accent: #f39c12; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', sans-serif; }
+        body { background: #f4f7f9; color: #333; padding: 10px; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; }
         
-        .employee-bar { background: #2c3e50; color: white; padding: 10px 20px; display: flex; align-items: center; gap: 15px; font-size: 14px; }
-        .employee-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 5px 10px; border-radius: 4px; outline: none; flex: 1; }
-
-        .header { background: linear-gradient(135deg, #1a2a6c, #b21f1f); color: white; padding: 15px; text-align: center; }
+        .emp-nav { background: #0f172a; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+        .emp-nav input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 6px 12px; border-radius: 6px; outline: none; width: 140px; }
+        .main-header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 25px; text-align: center; }
         
-        /* Fixed Scanner Styles */
-        #scanner-container { display: none; position: relative; width: 100%; height: 300px; background: #000; }
+        #scanner-container { display: none; position: relative; width: 100%; height: 280px; background: #000; }
         #scanner-container video { width: 100%; height: 100%; object-fit: cover; }
-        .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 40%; border: 2px solid #2ecc71; box-shadow: 0 0 0 2000px rgba(0,0,0,0.5); pointer-events: none; }
+        .scan-target { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70%; height: 40%; border: 2px dashed #2ecc71; border-radius: 8px; box-shadow: 0 0 0 2000px rgba(0,0,0,0.6); pointer-events: none; }
 
-        .form-section { padding: 20px; background: #fafafa; border-bottom: 1px solid #eee; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 15px; }
-        label { font-size: 11px; color: #777; font-weight: bold; text-transform: uppercase; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-top: 5px; font-size: 14px; }
-        
+        .form-card { padding: 20px; background: #fff; border-bottom: 1px solid #edf2f7; }
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; margin-top: 6px; font-size: 15px; transition: 0.3s; }
         #manualPrice { background: #fff9e6; border: 1px solid #f39c12; font-weight: bold; }
 
-        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
-        .add-btn { flex: 2; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; min-width: 150px; }
-        .scan-btn { flex: 1; background: #3498db; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .update-btn { flex: 2; background: #f39c12; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; display: none; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn { padding: 14px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .btn-scan { background: #3b82f6; color: white; flex: 1; }
+        .btn-add { background: var(--success); color: white; flex: 2; min-width: 180px; }
+        .btn-update { background: var(--accent); color: white; flex: 2; display: none; }
 
-        .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); background: #fff; padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
-        .stat-item span { display: block; font-size: 18px; font-weight: bold; color: #1a2a6c; }
-        
-        .table-section { padding: 15px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th { text-align: left; padding: 12px; background: #f8f9fa; font-size: 11px; border-bottom: 2px solid #dee2e6; }
-        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
-        .emp-badge { background: #e1e8ed; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); background: #f8fafc; padding: 20px; border-bottom: 1px solid #e2e8f0; }
+        .stat-box { text-align: center; border-right: 1px solid #e2e8f0; }
+        .stat-box h4 { font-size: 20px; color: var(--primary); }
+
+        .tool-bar { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; gap: 15px; background: white; }
+        .search-input { flex: 1; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; }
+        .btn-export { background: #0f172a; color: white; padding: 10px 15px; border-radius: 8px; font-size: 12px; }
+
+        .table-wrap { overflow-x: auto; padding: 0 10px 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { background: #f1f5f9; padding: 15px 12px; text-align: left; font-size: 11px; color: #475569; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 15px 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        .emp-chip { background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="employee-bar">
-        <span>👤 Employee:</span>
-        <input type="text" id="employeeName" class="employee-input" placeholder="Enter Name">
-        <span id="liveClock" style="font-size: 11px; opacity: 0.8;"></span>
+    <div class="emp-nav">
+        <div>👤 <input type="text" id="empName" placeholder="Employee Name" onchange="localStorage.setItem('user', this.value)"></div>
+        <div id="clock"></div>
     </div>
-
-    <div class="header"><h2>Diamond Inventory</h2></div>
-
-    <div id="scanner-container">
-        <div class="scanner-overlay"></div>
-        <button onclick="stopScanner()" style="position: absolute; top: 10px; right: 10px; z-index: 100; background: red; color: white; border: none; padding: 8px 15px; border-radius: 5px;">CLOSE</button>
+    <div class="main-header">
+        <h1>Diamond Inventory Pro</h1>
+        <p style="font-size: 11px; opacity: 0.8;">Premium Management System</p>
     </div>
-
-    <input type="file" id="fileScanner" accept="image/*" capture="environment" style="display: none;" onchange="decodeImage(this)">
-
-    <div class="form-section">
+    <div id="scanner-container"><div class="scan-target"></div><button onclick="stopScanner()" style="position:absolute; top:15px; right:15px; background:red; color:white; border:none; padding:8px 15px; border-radius:6px; z-index:100;">Cancel</button></div>
+    <div class="form-card">
         <input type="hidden" id="edit-id">
-        <div class="form-grid">
-            <div><label>Date</label><input type="date" id="entryDate"></div>
-            <div><label>Barcode</label><input type="text" id="barcode" placeholder="Scan result here"></div>
-            <div><label>Weight (ct)</label><input type="number" id="weight" step="0.01" oninput="suggestPrice()"></div>
-            <div><label>Cut</label><select id="cut" onchange="suggestPrice()"><option value="Ex">Excellent</option><option value="VG">Very Good</option></select></div>
+        <div class="grid-inputs">
+            <div><label>Date</label><input type="date" id="invDate"></div>
+            <div><label>Barcode</label><input type="text" id="barcode"></div>
+            <div><label>Weight (ct)</label><input type="number" id="weight" step="0.01" oninput="calcPrice()"></div>
+            <div><label>Cut</label><select id="cut" onchange="calcPrice()"><option value="Ex">Excellent</option><option value="VG">Very Good</option></select></div>
             <div><label>Shape</label><select id="shape"><option value="PN">PN</option><option value="MQ">MQ</option><option value="OVL">OVL</option><option value="RD">Round</option></select></div>
             <div><label>Price/ct (₹)</label><input type="number" id="manualPrice"></div>
         </div>
-        <div class="btn-row">
-            <button class="scan-btn" onclick="startScanner()">📷 SCAN BARCODE</button>
-            <button class="add-btn" id="add-btn" onclick="saveEntry()">➕ ADD ENTRY</button>
-            <button class="update-btn" id="update-btn" onclick="saveEntry(true)">💾 UPDATE</button>
+        <div class="btn-group">
+            <button class="btn btn-scan" onclick="startScanner()">📷 SCAN</button>
+            <button class="btn btn-add" id="add-btn" onclick="saveData()">➕ ADD ENTRY</button>
+            <button class="btn btn-update" id="upd-btn" onclick="saveData(true)">💾 UPDATE</button>
         </div>
     </div>
-
-    <div class="stats-bar">
-        <div class="stat-item"><span id="totalItems">0</span><label>STONES</label></div>
-        <div class="stat-item"><span id="sumWeight">0.00</span><label>TOTAL WT</label></div>
-        <div class="stat-item"><span id="totalVal">₹0</span><label>TOTAL VAL</label></div>
+    <div class="stats-grid">
+        <div class="stat-box"><h4 id="statCount">0</h4><p>STONES</p></div>
+        <div class="stat-box"><h4 id="statWeight">0.00</h4><p>TOTAL WT</p></div>
+        <div class="stat-box"><h4 id="statValue">₹0</h4><p>TOTAL VAL</p></div>
     </div>
-
-    <div class="table-section">
-        <table id="invTable">
+    <div class="tool-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search..." oninput="renderTable()">
+        <button class="btn btn-export" onclick="exportCSV()">📥 EXPORT CSV</button>
+    </div>
+    <div class="table-wrap">
+        <table>
             <thead><tr><th>Date</th><th>Employee</th><th>Barcode</th><th>Detail</th><th>Wt</th><th>Total</th><th>Action</th></tr></thead>
             <tbody id="tableBody"></tbody>
         </table>
@@ -93,54 +93,107 @@
 
 <script>
     let db;
-    document.getElementById('entryDate').valueAsDate = new Date();
+    document.getElementById('invDate').valueAsDate = new Date();
+    if(localStorage.getItem('user')) document.getElementById('empName').value = localStorage.getItem('user');
 
-    // Database Setup
-    const request = indexedDB.open('DiamondFixedDB', 1);
-    request.onupgradeneeded = e => e.target.result.createObjectStore('inventory', { keyPath: 'id', autoIncrement: true });
-    request.onsuccess = e => { db = e.target.result; renderData(); };
+    const req = indexedDB.open('DiamondERP_V7', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('inventory', { keyPath: 'id', autoIncrement: true });
+    req.onsuccess = e => { db = e.target.result; renderTable(); };
 
-    // Scanner logic with Fallback
+    function calcPrice() {
+        const cut = document.getElementById('cut').value;
+        const wt = parseFloat(document.getElementById('weight').value) || 0;
+        let p = (cut === 'Ex') ? (wt < 2 ? 1250 : (wt < 3 ? 1130 : 1030)) : (wt < 2 ? 800 : 750);
+        document.getElementById('manualPrice').value = p;
+    }
+
     function startScanner() {
-        // If not HTTPS or Localhost, Chrome WILL block the camera.
-        const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-        
-        if (!isSecure) {
-            alert("Security Notice: Live camera requires HTTPS. Opening 'Photo Mode' instead.");
-            document.getElementById('fileScanner').click();
-            return;
-        }
-
-        const container = document.getElementById('scanner-container');
-        container.style.display = 'block';
-
+        const con = document.getElementById('scanner-container');
+        con.style.display = 'block';
         Quagga.init({
-            inputStream: { name: "Live", type: "LiveStream", target: container, constraints: { facingMode: "environment" } },
+            inputStream: { name: "Live", type: "LiveStream", target: con, constraints: { facingMode: "environment" } },
             decoder: { readers: ["code_128_reader", "ean_reader", "upc_reader"] }
-        }, (err) => {
-            if (err) {
-                console.error(err);
-                alert("Live Camera Error. Switching to Photo Mode.");
-                stopScanner();
-                document.getElementById('fileScanner').click();
-                return;
-            }
-            Quagga.start();
-        });
+        }, (err) => { if(err) return alert("Camera Error"); Quagga.start(); });
+        Quagga.onDetected(r => { document.getElementById('barcode').value = r.codeResult.code; stopScanner(); });
+    }
+    function stopScanner() { Quagga.stop(); document.getElementById('scanner-container').style.display = 'none'; }
 
-        Quagga.onDetected(res => {
-            document.getElementById('barcode').value = res.codeResult.code;
-            if (navigator.vibrate) navigator.vibrate(200);
-            stopScanner();
-        });
+    function saveData(isUpd = false) {
+        const emp = document.getElementById('empName').value;
+        const bar = document.getElementById('barcode').value;
+        const wt = parseFloat(document.getElementById('weight').value);
+        const pr = parseFloat(document.getElementById('manualPrice').value);
+        if(!emp || !bar || isNaN(wt)) return alert("Missing fields!");
+
+        const obj = { 
+            date: document.getElementById('invDate').value,
+            emp, barcode: bar, weight: wt, cut: document.getElementById('cut').value,
+            shape: document.getElementById('shape').value, price: pr, total: wt * pr 
+        };
+
+        const tx = db.transaction('inventory', 'readwrite');
+        if(isUpd) { obj.id = parseInt(document.getElementById('edit-id').value); tx.objectStore('inventory').put(obj); }
+        else { tx.objectStore('inventory').add(obj); }
+        tx.oncomplete = () => { reset(); renderTable(); };
     }
 
-    function stopScanner() {
-        Quagga.stop();
-        document.getElementById('scanner-container').style.display = 'none';
+    function renderTable() {
+        const tx = db.transaction('inventory', 'readonly');
+        tx.objectStore('inventory').getAll().onsuccess = e => {
+            const s = document.getElementById('searchInput').value.toLowerCase();
+            let data = e.target.result.filter(i => i.barcode.toLowerCase().includes(s) || i.emp.toLowerCase().includes(s));
+            data.sort((a,b) => new Date(b.date) - new Date(a.date));
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            let tW = 0, tV = 0;
+            data.forEach(item => {
+                tW += item.weight; tV += item.total;
+                tbody.innerHTML += `<tr><td>${item.date}</td><td><span class="emp-chip">${item.emp}</span></td><td><b>${item.barcode}</b></td><td>${item.shape}/${item.cut}</td><td>${item.weight.toFixed(2)}</td><td>₹${item.total.toLocaleString()}</td><td><button onclick="edit(${item.id})">✏️</button></td></tr>`;
+            });
+            document.getElementById('statCount').innerText = data.length;
+            document.getElementById('statWeight').innerText = tW.toFixed(2);
+            document.getElementById('statValue').innerText = '₹' + tV.toLocaleString();
+        };
     }
 
-    // Photo Scanner Logic (Fallback)
+    function edit(id) {
+        const tx = db.transaction('inventory', 'readonly');
+        tx.objectStore('inventory').get(id).onsuccess = e => {
+            const i = e.target.result;
+            document.getElementById('edit-id').value = i.id;
+            document.getElementById('invDate').value = i.date;
+            document.getElementById('barcode').value = i.barcode;
+            document.getElementById('weight').value = i.weight;
+            document.getElementById('manualPrice').value = i.price;
+            document.getElementById('add-btn').style.display = 'none';
+            document.getElementById('upd-btn').style.display = 'block';
+            window.scrollTo(0,0);
+        };
+    }
+
+    function reset() {
+        document.getElementById('barcode').value = '';
+        document.getElementById('weight').value = '';
+        document.getElementById('add-btn').style.display = 'block';
+        document.getElementById('upd-btn').style.display = 'none';
+    }
+
+    function exportCSV() {
+        const tx = db.transaction('inventory', 'readonly');
+        tx.objectStore('inventory').getAll().onsuccess = e => {
+            let csv = "Date,Employee,Barcode,Shape,Cut,Weight,Total\n";
+            e.target.result.forEach(i => csv += `${i.date},${i.emp},${i.barcode},${i.shape},${i.cut},${i.weight},${i.total}\n`);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `Inventory_${new Date().toLocaleDateString()}.csv`;
+            a.click();
+        };
+    }
+    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleString(); }, 1000);
+</script>
+</body>
+</html>
     function decodeImage(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
