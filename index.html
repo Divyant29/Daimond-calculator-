@@ -55,7 +55,7 @@
     </div>
     <div class="main-header">
         <h1>Daimond Calculator</h1>
-        <p style="font-size: 11px; opacity: 0.8;">®DIVYANT PARMAR</p>
+        <p style="font-size: 11px; opacity: 0.8;">created by ®DIVYANT PARMAR</p>
     </div>
     <div id="scanner-container"><div class="scan-target"></div><button onclick="stopScanner()" style="position:absolute; top:15px; right:15px; background:red; color:white; border:none; padding:8px 15px; border-radius:6px; z-index:100;">Cancel</button></div>
     <div class="form-card">
@@ -191,92 +191,6 @@
         };
     }
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleString(); }, 1000);
-</script>
-</body>
-</html>
-                });
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    function suggestPrice() {
-        const cut = document.getElementById('cut').value;
-        const wt = parseFloat(document.getElementById('weight').value) || 0;
-        let p = (cut === 'Ex') ? (wt < 2 ? 1250 : (wt < 3 ? 1130 : 1030)) : (wt < 2 ? 800 : 750);
-        document.getElementById('manualPrice').value = p;
-    }
-
-    function saveEntry(isUpdate = false) {
-        const emp = document.getElementById('employeeName').value;
-        const bar = document.getElementById('barcode').value;
-        const wt = parseFloat(document.getElementById('weight').value);
-        const price = parseFloat(document.getElementById('manualPrice').value);
-        if (!emp || !bar || isNaN(wt)) return alert("Fill Name, Barcode and Weight!");
-
-        const entry = {
-            date: document.getElementById('entryDate').value,
-            emp, barcode: bar, weight: wt,
-            cut: document.getElementById('cut').value,
-            shape: document.getElementById('shape').value,
-            price, total: wt * price
-        };
-
-        const tx = db.transaction('inventory', 'readwrite');
-        const store = tx.objectStore('inventory');
-        if (isUpdate) { entry.id = parseInt(document.getElementById('edit-id').value); store.put(entry); }
-        else { store.add(entry); }
-        tx.oncomplete = () => { resetForm(); renderData(); };
-    }
-
-    function renderData() {
-        const tx = db.transaction('inventory', 'readonly');
-        tx.objectStore('inventory').getAll().onsuccess = e => {
-            const data = e.target.result;
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            let tW = 0, tV = 0;
-            data.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(item => {
-                tW += item.weight; tV += item.total;
-                tbody.innerHTML += `<tr>
-                    <td style="font-size:10px">${item.date}</td>
-                    <td><span class="emp-badge">${item.emp}</span></td>
-                    <td><b>${item.barcode}</b></td>
-                    <td>${item.shape}/${item.cut}</td>
-                    <td>${item.weight}</td>
-                    <td>₹${item.total.toLocaleString()}</td>
-                    <td><button onclick="startEdit(${item.id})">✏️</button></td>
-                </tr>`;
-            });
-            document.getElementById('totalItems').innerText = data.length;
-            document.getElementById('sumWeight').innerText = tW.toFixed(2);
-            document.getElementById('totalVal').innerText = '₹' + tV.toLocaleString();
-        };
-    }
-
-    function startEdit(id) {
-        const tx = db.transaction('inventory', 'readonly');
-        tx.objectStore('inventory').get(id).onsuccess = e => {
-            const i = e.target.result;
-            document.getElementById('edit-id').value = i.id;
-            document.getElementById('barcode').value = i.barcode;
-            document.getElementById('weight').value = i.weight;
-            document.getElementById('manualPrice').value = i.price;
-            document.getElementById('employeeName').value = i.emp;
-            document.getElementById('add-btn').style.display = 'none';
-            document.getElementById('update-btn').style.display = 'block';
-            window.scrollTo(0,0);
-        };
-    }
-
-    function resetForm() {
-        document.getElementById('barcode').value = '';
-        document.getElementById('weight').value = '';
-        document.getElementById('add-btn').style.display = 'block';
-        document.getElementById('update-btn').style.display = 'none';
-    }
-
-    setInterval(() => { document.getElementById('liveClock').innerText = new Date().toLocaleString(); }, 1000);
 </script>
 </body>
 </html>
