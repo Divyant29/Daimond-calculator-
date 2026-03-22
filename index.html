@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diamond Cloud Manager</title>
-    
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3715139848552788" crossorigin="anonymous"></script>
-
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <style>
         :root { 
             --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --label: #64748b;
@@ -25,17 +22,20 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; transition: var(--transition); }
         body { background: var(--bg); color: var(--text); padding-bottom: 20px; }
 
+        /* Auth Screen */
         #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--primary); color: white; padding: 20px; }
         .auth-card { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; color: #333; }
 
+        /* Navbar & Menu */
         .navbar { display: flex; background: var(--primary); color: white; justify-content: space-between; align-items: center; padding: 0 15px; height: 55px; position: sticky; top: 0; z-index: 1000; }
         .hamburger { font-size: 24px; cursor: pointer; padding: 10px; }
         
-        .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: var(--card); z-index: 2000; box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding: 20px; overflow-y: auto; }
+        .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: var(--card); z-index: 2000; box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding: 20px; }
         .side-menu.open { right: 0; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1500; }
         .overlay.active { display: block; }
 
+        /* Tabs */
         .tabs { display: flex; background: var(--primary); color: white; }
         .tab { flex: 1; padding: 15px; text-align: center; font-size: 11px; font-weight: bold; cursor: pointer; opacity: 0.6; }
         .tab.active { opacity: 1; border-bottom: 3px solid var(--accent); }
@@ -53,15 +53,14 @@
         
         .summary-box { background: #1e293b; color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-around; text-align: center; }
         .history-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--label); padding: 10px 0; }
+        #scanner-container { display: none; width: 100%; height: 200px; background: #000; border-radius: 12px; margin-bottom: 15px; overflow: hidden; }
 
+        /* Menu Items */
         .menu-item { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #eee; cursor: pointer; }
         .theme-switch { width: 50px; height: 24px; background: #cbd5e1; border-radius: 20px; position: relative; }
         .theme-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: 0.3s; }
         [data-theme="dark"] .theme-switch { background: var(--accent); }
         [data-theme="dark"] .theme-switch::after { left: 28px; }
-
-        /* Ad Placeholder Styling */
-        .ad-container { margin: 15px 0; text-align: center; background: rgba(0,0,0,0.03); border-radius: 8px; min-height: 100px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--label); }
     </style>
 </head>
 <body>
@@ -72,7 +71,7 @@
         <input type="email" id="email" placeholder="Email Address">
         <input type="password" id="password" placeholder="Password">
         <button class="btn btn-blue" id="auth-btn" onclick="handleAuth()">Create Account</button>
-        <p style="margin-top:15px; font-size:12px; text-align:center; color:#333" onclick="toggleAuth()">
+        <p style="margin-top:15px; font-size:12px; text-align:center; color: #333" onclick="toggleAuth()">
             Already have an account? <span style="color:var(--accent); cursor:pointer">Login</span>
         </p>
     </div>
@@ -97,18 +96,13 @@
             <span>Dark Mode</span>
             <div class="theme-switch"></div>
         </div>
-        
-        <div class="ad-container">
-            <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3715139848552788" data-ad-slot="auto" data-ad-format="auto" data-full-width-responsive="true"></ins>
-            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-        </div>
-
         <div class="menu-item" onclick="logout()" style="color:var(--danger); border:none; margin-top:20px">
             <b>Logout</b>
         </div>
     </div>
 
     <div id="entry" class="container active">
+        <div id="scanner-container"></div>
         <div class="card">
             <label>Packet Number</label>
             <input type="text" id="barcode" placeholder="Barcode/Packet no.">
@@ -130,7 +124,7 @@
     <div id="prices" class="container">
         <div class="card">
             <h3>Set Rates</h3>
-            <label>Department</label><select id="p_grp"><option value="Fancy">Fancy</option><option value="Step">Step/Other</option></select>
+            <label>Department</label><select id="p_grp"><option value="Fancy">Fancy (Pear, MQ, Oval)</option><option value="Step">Step/Other (RD, Rad, etc.)</option></select>
             <label>Cut</label><select id="p_cut"><option value="Ex">Ex</option><option value="VG">VG</option></select>
             <div style="display:flex; gap:10px;"><input type="number" id="p_min" placeholder="Min Wt"><input type="number" id="p_max" placeholder="Max Wt"></div>
             <input type="number" id="p_amt" placeholder="Price per ct (₹)">
@@ -142,6 +136,313 @@
     <div id="reports" class="container">
         <div class="summary-box">
             <div><h4 id="totCount">0</h4><small>Stones</small></div>
+            <div><h4 id="totWt">0.00</h4><small>Weight</small></div>
+            <div><h4 id="totVal">₹0</h4><small>Value</small></div>
+        </div>
+        <input type="month" id="filterMonth" onchange="loadReports()">
+        <div id="historyList"></div>
+    </div>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo",
+    authDomain: "daimond-calculator.firebaseapp.com",
+    projectId: "daimond-calculator",
+    storageBucket: "daimond-calculator.firebasestorage.app",
+    messagingSenderId: "1076337600089",
+    appId: "1:1076337600089:web:dce0e8433eb4551c563348"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let userPrices = [];
+
+// MENU & THEME LOGIC
+function toggleMenu() {
+    document.getElementById('side-menu').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('active');
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const target = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', target);
+    localStorage.setItem('theme', target);
+}
+
+// Load saved theme
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+// AUTH LOGIC
+let isLoginMode = false;
+function toggleAuth() {
+    isLoginMode = !isLoginMode;
+    document.getElementById('auth-title').innerText = isLoginMode ? "Login" : "Sign Up";
+    document.getElementById('auth-btn').innerText = isLoginMode ? "Login" : "Create Account";
+}
+
+async function handleAuth() {
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('password').value;
+    try {
+        if(isLoginMode) await auth.signInWithEmailAndPassword(email, pass);
+        else await auth.createUserWithEmailAndPassword(email, pass);
+    } catch(e) { alert(e.message); }
+}
+
+auth.onAuthStateChanged(user => {
+    if(user) {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        document.getElementById('filterMonth').value = new Date().toISOString().slice(0,7);
+        loadPrices(); loadReports();
+    } else {
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('main-app').style.display = 'none';
+    }
+});
+
+function logout() { auth.signOut(); toggleMenu(); }
+
+// DATABASE LOGIC
+async function savePriceRule() {
+    const rule = {
+        grp: document.getElementById('p_grp').value,
+        cut: document.getElementById('p_cut').value,
+        min: parseFloat(document.getElementById('p_min').value),
+        max: parseFloat(document.getElementById('p_max').value),
+        amt: parseFloat(document.getElementById('p_amt').value)
+    };
+    await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(rule);
+    loadPrices();
+}
+
+async function loadPrices() {
+    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();
+    userPrices = [];
+    let html = '';
+    snap.forEach(doc => {
+        const r = doc.data();
+        userPrices.push(r);
+        html += `<div class="card" style="display:flex; justify-content:space-between; font-size:12px">
+            <span>${r.grp} (${r.cut}) | ${r.min}-${r.max}ct</span>
+            <b>₹${r.amt} <span style="color:red; margin-left:10px" onclick="deleteDoc('prices','${doc.id}',loadPrices)">✕</span></b>
+        </div>`;
+    });
+    document.getElementById('priceList').innerHTML = html;
+}
+
+function lookupPrice() {
+    const shp = document.getElementById('shape').value;
+    const cut = document.getElementById('cut').value;
+    const wt = parseFloat(document.getElementById('weight').value) || 0;
+    const grp = ["Oval", "Marquise", "Pear"].includes(shp) ? "Fancy" : "Step";
+    const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);
+    document.getElementById('price').value = match ? match.amt : 0;
+}
+
+async function saveStone() {
+    const stone = {
+        barcode: document.getElementById('barcode').value || "No ID",
+        shape: document.getElementById('shape').value,
+        cut: document.getElementById('cut').value,
+        weight: parseFloat(document.getElementById('weight').value),
+        price: parseFloat(document.getElementById('price').value),
+        month: new Date().toISOString().slice(0, 7),
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if(isNaN(stone.weight)) return alert("Weight is missing!");
+    await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(stone);
+    document.getElementById('barcode').value = ''; document.getElementById('weight').value = '';
+    loadReports();
+    alert("Stone Saved!");
+}
+
+async function loadReports() {
+    const month = document.getElementById('filterMonth').value;
+    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones")
+        .where("month", "==", month).orderBy("timestamp", "desc").get();
+    let html = '', tC = 0, tW = 0, tV = 0;
+    snap.forEach(doc => {
+        const s = doc.data();
+        const total = s.weight * s.price;
+        tC++; tW += s.weight; tV += total;
+        html += `<div class="history-item">
+            <div><b>${s.barcode}</b><br><small>${s.shape} (${s.cut}) | ${s.weight}ct</small></div>
+            <div style="text-align:right">₹${total.toLocaleString()}<br><small style="color:red" onclick="deleteDoc('stones','${doc.id}',loadReports)">Delete</small></div>
+        </div>`;
+    });
+    document.getElementById('historyList').innerHTML = html;
+    document.getElementById('totCount').innerText = tC;
+    document.getElementById('totWt').innerText = tW.toFixed(2);
+    document.getElementById('totVal').innerText = '₹' + tV.toLocaleString();
+}
+
+async function deleteDoc(coll, id, cb) { if(confirm("Delete item?")) { await db.collection("users").doc(auth.currentUser.uid).collection(coll).doc(id).delete(); cb(); } }
+
+function showTab(id) {
+    document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>
+
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo",
+    authDomain: "daimond-calculator.firebaseapp.com",
+    projectId: "daimond-calculator",
+    storageBucket: "daimond-calculator.firebasestorage.app",
+    messagingSenderId: "1076337600089",
+    appId: "1:1076337600089:web:dce0e8433eb4551c563348"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let userPrices = [];
+
+// MENU & THEME LOGIC
+function toggleMenu() {
+    document.getElementById('side-menu').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('active');
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const target = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', target);
+    localStorage.setItem('theme', target);
+}
+
+// Load saved theme
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+// AUTH LOGIC
+let isLoginMode = false;
+function toggleAuth() {
+    isLoginMode = !isLoginMode;
+    document.getElementById('auth-title').innerText = isLoginMode ? "Login" : "Sign Up";
+    document.getElementById('auth-btn').innerText = isLoginMode ? "Login" : "Create Account";
+}
+
+async function handleAuth() {
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('password').value;
+    try {
+        if(isLoginMode) await auth.signInWithEmailAndPassword(email, pass);
+        else await auth.createUserWithEmailAndPassword(email, pass);
+    } catch(e) { alert(e.message); }
+}
+
+auth.onAuthStateChanged(user => {
+    if(user) {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        document.getElementById('filterMonth').value = new Date().toISOString().slice(0,7);
+        loadPrices(); loadReports();
+    } else {
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('main-app').style.display = 'none';
+    }
+});
+
+function logout() { auth.signOut(); toggleMenu(); }
+
+// DATABASE LOGIC
+async function savePriceRule() {
+    const rule = {
+        grp: document.getElementById('p_grp').value,
+        cut: document.getElementById('p_cut').value,
+        min: parseFloat(document.getElementById('p_min').value),
+        max: parseFloat(document.getElementById('p_max').value),
+        amt: parseFloat(document.getElementById('p_amt').value)
+    };
+    await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(rule);
+    loadPrices();
+}
+
+async function loadPrices() {
+    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();
+    userPrices = [];
+    let html = '';
+    snap.forEach(doc => {
+        const r = doc.data();
+        userPrices.push(r);
+        html += `<div class="card" style="display:flex; justify-content:space-between; font-size:12px">
+            <span>${r.grp} (${r.cut}) | ${r.min}-${r.max}ct</span>
+            <b>₹${r.amt} <span style="color:red; margin-left:10px" onclick="deleteDoc('prices','${doc.id}',loadPrices)">✕</span></b>
+        </div>`;
+    });
+    document.getElementById('priceList').innerHTML = html;
+}
+
+function lookupPrice() {
+    const shp = document.getElementById('shape').value;
+    const cut = document.getElementById('cut').value;
+    const wt = parseFloat(document.getElementById('weight').value) || 0;
+    const grp = ["Oval", "Marquise", "Pear"].includes(shp) ? "Fancy" : "Step";
+    const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);
+    document.getElementById('price').value = match ? match.amt : 0;
+}
+
+async function saveStone() {
+    const stone = {
+        barcode: document.getElementById('barcode').value || "No ID",
+        shape: document.getElementById('shape').value,
+        cut: document.getElementById('cut').value,
+        weight: parseFloat(document.getElementById('weight').value),
+        price: parseFloat(document.getElementById('price').value),
+        month: new Date().toISOString().slice(0, 7),
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if(isNaN(stone.weight)) return alert("Weight is missing!");
+    await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(stone);
+    document.getElementById('barcode').value = ''; document.getElementById('weight').value = '';
+    loadReports();
+    alert("Stone Saved!");
+}
+
+async function loadReports() {
+    const month = document.getElementById('filterMonth').value;
+    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones")
+        .where("month", "==", month).orderBy("timestamp", "desc").get();
+    let html = '', tC = 0, tW = 0, tV = 0;
+    snap.forEach(doc => {
+        const s = doc.data();
+        const total = s.weight * s.price;
+        tC++; tW += s.weight; tV += total;
+        html += `<div class="history-item">
+            <div><b>${s.barcode}</b><br><small>${s.shape} (${s.cut}) | ${s.weight}ct</small></div>
+            <div style="text-align:right">₹${total.toLocaleString()}<br><small style="color:red" onclick="deleteDoc('stones','${doc.id}',loadReports)">Delete</small></div>
+        </div>`;
+    });
+    document.getElementById('historyList').innerHTML = html;
+    document.getElementById('totCount').innerText = tC;
+    document.getElementById('totWt').innerText = tW.toFixed(2);
+    document.getElementById('totVal').innerText = '₹' + tV.toLocaleString();
+}
+
+async function deleteDoc(coll, id, cb) { if(confirm("Delete item?")) { await db.collection("users").doc(auth.currentUser.uid).collection(coll).doc(id).delete(); cb(); } }
+
+function showTab(id) {
+    document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>
+<div><h4 id="totCount">0</h4><small>Stones</small></div>
             <div><h4 id="totWt">0.00</h4><small>Weight</small></div>
             <div><h4 id="totVal">₹0</h4><small>Value</small></div>
         </div>
