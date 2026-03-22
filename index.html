@@ -9,26 +9,58 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <style>
-        :root { --primary: #0f172a; --accent: #3b82f6; --success: #10b981; --danger: #ef4444; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: #f1f5f9; padding-bottom: 20px; }
+        :root { 
+            --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --label: #64748b;
+            --primary: #0f172a; --accent: #3b82f6; --success: #10b981; --danger: #ef4444;
+            --input-bg: #ffffff; --transition: all 0.3s ease;
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --label: #94a3b8;
+            --primary: #020617; --input-bg: #334155;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; transition: var(--transition); }
+        body { background: var(--bg); color: var(--text); padding-bottom: 20px; }
+
+        /* Auth Screen */
         #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--primary); color: white; padding: 20px; }
         .auth-card { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; color: #333; }
-        #main-app { display: none; }
-        .tabs { display: flex; background: var(--primary); color: white; position: sticky; top: 0; z-index: 100; }
+
+        /* Navbar & Menu */
+        .navbar { display: flex; background: var(--primary); color: white; justify-content: space-between; align-items: center; padding: 0 15px; height: 55px; position: sticky; top: 0; z-index: 1000; }
+        .hamburger { font-size: 24px; cursor: pointer; padding: 10px; }
+        
+        .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: var(--card); z-index: 2000; box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding: 20px; }
+        .side-menu.open { right: 0; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1500; }
+        .overlay.active { display: block; }
+
+        /* Tabs */
+        .tabs { display: flex; background: var(--primary); color: white; }
         .tab { flex: 1; padding: 15px; text-align: center; font-size: 11px; font-weight: bold; cursor: pointer; opacity: 0.6; }
         .tab.active { opacity: 1; border-bottom: 3px solid var(--accent); }
+
         .container { max-width: 500px; margin: 0 auto; padding: 15px; display: none; }
         .container.active { display: block; }
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        label { font-size: 11px; color: #64748b; font-weight: bold; display: block; margin-bottom: 4px; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 12px; font-size: 15px; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        label { font-size: 11px; color: var(--label); font-weight: bold; display: block; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 12px; font-size: 15px; background: var(--input-bg); color: var(--text); }
+        
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
         .btn-blue { background: var(--accent); color: white; }
         .btn-green { background: var(--success); color: white; }
-        .summary-box { background: #0f172a; color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-around; text-align: center; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding: 10px 0; }
+        
+        .summary-box { background: #1e293b; color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-around; text-align: center; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--label); padding: 10px 0; }
         #scanner-container { display: none; width: 100%; height: 200px; background: #000; border-radius: 12px; margin-bottom: 15px; overflow: hidden; }
+
+        /* Menu Items */
+        .menu-item { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #eee; cursor: pointer; }
+        .theme-switch { width: 50px; height: 24px; background: #cbd5e1; border-radius: 20px; position: relative; }
+        .theme-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: 0.3s; }
+        [data-theme="dark"] .theme-switch { background: var(--accent); }
+        [data-theme="dark"] .theme-switch::after { left: 28px; }
     </style>
 </head>
 <body>
@@ -37,20 +69,36 @@
     <div class="auth-card">
         <h2 id="auth-title" style="margin-bottom:15px">Sign Up</h2>
         <input type="email" id="email" placeholder="Email Address">
-        <input type="password" id="password" placeholder="Password (Min 6 chars)">
+        <input type="password" id="password" placeholder="Password">
         <button class="btn btn-blue" id="auth-btn" onclick="handleAuth()">Create Account</button>
-        <p style="margin-top:15px; font-size:12px; text-align:center" onclick="toggleAuth()">
+        <p style="margin-top:15px; font-size:12px; text-align:center; color: #333" onclick="toggleAuth()">
             Already have an account? <span style="color:var(--accent); cursor:pointer">Login</span>
         </p>
     </div>
 </div>
 
 <div id="main-app">
+    <div class="navbar">
+        <span style="font-weight:bold; font-size:14px">DIAMOND MANAGER</span>
+        <div class="hamburger" onclick="toggleMenu()">☰</div>
+    </div>
+    
     <div class="tabs">
         <div class="tab active" onclick="showTab('entry')">ENTRY</div>
         <div class="tab" onclick="showTab('prices')">PRICES</div>
         <div class="tab" onclick="showTab('reports')">REPORTS</div>
-        <div class="tab" onclick="logout()" style="color:var(--danger)">LOGOUT</div>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+    <div class="side-menu" id="side-menu">
+        <h3 style="margin-bottom:20px">Settings</h3>
+        <div class="menu-item" onclick="toggleTheme()">
+            <span>Dark Mode</span>
+            <div class="theme-switch"></div>
+        </div>
+        <div class="menu-item" onclick="logout()" style="color:var(--danger); border:none; margin-top:20px">
+            <b>Logout</b>
+        </div>
     </div>
 
     <div id="entry" class="container active">
@@ -61,15 +109,15 @@
             <div style="display:flex; gap:10px;">
                 <div style="flex:1"><label>Shape</label>
                     <select id="shape" onchange="lookupPrice()">
-                        <optgroup label="Fancy Cuts (Pear/MQ/Oval)"><option value="Oval">Oval</option><option value="Marquise">Marquise</option><option value="Pear">Pear</option></optgroup>
-                        <optgroup label="Step Cuts (Other)"><option value="Round">Round</option><option value="Radiant">Radiant</option><option value="Emerald">Emerald</option><option value="Cushion">Cushion</option><option value="Princess">Princess</option></optgroup>
+                        <optgroup label="Fancy Cuts"><option value="Oval">Oval</option><option value="Marquise">Marquise</option><option value="Pear">Pear</option></optgroup>
+                        <optgroup label="Step Cuts"><option value="Round">Round</option><option value="Radiant">Radiant</option><option value="Emerald">Emerald</option><option value="Cushion">Cushion</option><option value="Princess">Princess</option></optgroup>
                     </select>
                 </div>
                 <div style="flex:1"><label>Cut</label><select id="cut" onchange="lookupPrice()"><option value="Ex">Ex</option><option value="VG">VG</option></select></div>
             </div>
             <label>Weight (ct)</label><input type="number" id="weight" step="0.01" oninput="lookupPrice()">
-            <label>Price/ct (₹)</label><input type="number" id="price" style="background:#fefce8" readonly>
-            <button class="btn btn-green" onclick="saveStone()">SAVE</button>
+            <label>Price/ct (₹)</label><input type="number" id="price" style="background:rgba(59,130,246,0.1)" readonly>
+            <button class="btn btn-green" onclick="saveStone()">SAVE TO CLOUD</button>
         </div>
     </div>
 
@@ -97,7 +145,6 @@
 </div>
 
 <script>
-// YOUR FIREBASE CONFIG
 const firebaseConfig = {
     apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo",
     authDomain: "daimond-calculator.firebaseapp.com",
@@ -110,9 +157,27 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-let isLoginMode = false;
 let userPrices = [];
 
+// MENU & THEME LOGIC
+function toggleMenu() {
+    document.getElementById('side-menu').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('active');
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const target = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', target);
+    localStorage.setItem('theme', target);
+}
+
+// Load saved theme
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+// AUTH LOGIC
+let isLoginMode = false;
 function toggleAuth() {
     isLoginMode = !isLoginMode;
     document.getElementById('auth-title').innerText = isLoginMode ? "Login" : "Sign Up";
@@ -140,7 +205,93 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-function logout() { auth.signOut(); }
+function logout() { auth.signOut(); toggleMenu(); }
+
+// DATABASE LOGIC
+async function savePriceRule() {
+    const rule = {
+        grp: document.getElementById('p_grp').value,
+        cut: document.getElementById('p_cut').value,
+        min: parseFloat(document.getElementById('p_min').value),
+        max: parseFloat(document.getElementById('p_max').value),
+        amt: parseFloat(document.getElementById('p_amt').value)
+    };
+    await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(rule);
+    loadPrices();
+}
+
+async function loadPrices() {
+    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();
+    userPrices = [];
+    let html = '';
+    snap.forEach(doc => {
+        const r = doc.data();
+        userPrices.push(r);
+        html += `<div class="card" style="display:flex; justify-content:space-between; font-size:12px">
+            <span>${r.grp} (${r.cut}) | ${r.min}-${r.max}ct</span>
+            <b>₹${r.amt} <span style="color:red; margin-left:10px" onclick="deleteDoc('prices','${doc.id}',loadPrices)">✕</span></b>
+        </div>`;
+    });
+    document.getElementById('priceList').innerHTML = html;
+}
+
+function lookupPrice() {
+    const shp = document.getElementById('shape').value;
+    const cut = document.getElementById('cut').value;
+    const wt = parseFloat(document.getElementById('weight').value) || 0;
+    const grp = ["Oval", "Marquise", "Pear"].includes(shp) ? "Fancy" : "Step";
+    const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);
+    document.getElementById('price').value = match ? match.amt : 0;
+}
+
+async function saveStone() {
+    const stone = {
+        barcode: document.getElementById('barcode').value || "No ID",
+        shape: document.getElementById('shape').value,
+        cut: document.getElementById('cut').value,
+        weight: parseFloat(document.getElementById('weight').value),
+        price: parseFloat(document.getElementById('price').value),
+        month: new Date().toISOString().slice(0, 7),
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if(isNaN(stone.weight)) return alert("Weight is missing!");
+    await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(stone);
+    document.getElementById('barcode').value = ''; document.getElementById('weight').value = '';
+    loadReports();
+    alert("Stone Saved!");
+}
+
+async function loadReports() {
+    const month = document.getElementById('filterMonth').value;
+    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones")
+        .where("month", "==", month).orderBy("timestamp", "desc").get();
+    let html = '', tC = 0, tW = 0, tV = 0;
+    snap.forEach(doc => {
+        const s = doc.data();
+        const total = s.weight * s.price;
+        tC++; tW += s.weight; tV += total;
+        html += `<div class="history-item">
+            <div><b>${s.barcode}</b><br><small>${s.shape} (${s.cut}) | ${s.weight}ct</small></div>
+            <div style="text-align:right">₹${total.toLocaleString()}<br><small style="color:red" onclick="deleteDoc('stones','${doc.id}',loadReports)">Delete</small></div>
+        </div>`;
+    });
+    document.getElementById('historyList').innerHTML = html;
+    document.getElementById('totCount').innerText = tC;
+    document.getElementById('totWt').innerText = tW.toFixed(2);
+    document.getElementById('totVal').innerText = '₹' + tV.toLocaleString();
+}
+
+async function deleteDoc(coll, id, cb) { if(confirm("Delete item?")) { await db.collection("users").doc(auth.currentUser.uid).collection(coll).doc(id).delete(); cb(); } }
+
+function showTab(id) {
+    document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>
 
 async function savePriceRule() {
     const rule = {
