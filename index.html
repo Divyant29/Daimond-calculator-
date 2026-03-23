@@ -3,27 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diamond Cloud Manager</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0f172a">
-    
-    <link rel="apple-touch-icon" href="https://img.freepik.com/premium-photo/diamond-with-sparkles-logo-on-navy-blue-app-icon-background_644690-64.jpg">
-    <link rel="icon" href="https://img.freepik.com/premium-photo/diamond-with-sparkles-logo-on-navy-blue-app-icon-background_644690-64.jpg">
-
+    <title>Diamond Manager</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
     <style>
-        /* CSS Variables - FIXED for TRUE Dark Mode */
         :root { 
-            --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --label: #64748b;
+            --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --label: #64748b;
             --header-bg: #1e293b; --header-text: #ffffff;
             --input-bg: #ffffff; --input-border: #cbd5e1;
-            --accent: #3b82f6; --success: #10b981; --danger: #ef4444; --transition: 0.3s;
+            --accent: #3b82f6; --success: #10b981; --danger: #ef4444;
         }
         [data-theme="dark"] {
             --bg: #020617; --card: #1e293b; --text: #f1f5f9; --label: #94a3b8;
@@ -31,296 +20,221 @@
             --input-bg: #334155; --input-border: #475569;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: var(--transition); }
-        body { background: var(--bg); color: var(--text); padding-bottom: 20px; -webkit-tap-highlight-color: transparent; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; transition: background 0.3s; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 20px; }
 
-        /* Auth Screen - Attractive Styling */
-        #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--header-bg); color: var(--header-text); padding: 20px; }
-        .auth-logo { width: 100px; height: 100px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .auth-card { background: #ffffff; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; color: #333; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        [data-theme="dark"] .auth-card { background: #1e293b; color: #f1f5f9; }
+        /* Auth Screen */
+        #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--header-bg); padding: 20px; }
+        .auth-card { background: var(--card); padding: 30px; border-radius: 16px; width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); color: var(--text); }
 
-        /* FIXED Side Menu Appearance in Dark Mode */
-        .navbar { display: flex; background: var(--header-bg); color: var(--header-text); justify-content: space-between; align-items: center; padding: 0 20px; height: 60px; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .hamburger { font-size: 24px; cursor: pointer; padding: 10px; }
-        
-        .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: var(--card); z-index: 2000; box-shadow: -5px 0 15px rgba(0,0,0,0.2); padding: 20px; color: var(--text); }
-        .side-menu.open { right: 0; }
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1500; }
-        .overlay.active { display: block; }
-
-        .tabs { display: flex; background: var(--header-bg); color: var(--header-text); }
-        .tab { flex: 1; padding: 15px; text-align: center; font-size: 11px; font-weight: bold; cursor: pointer; opacity: 0.6; }
+        /* Navbar & Tabs */
+        .navbar { display: flex; background: var(--header-bg); color: var(--header-text); justify-content: space-between; align-items: center; padding: 0 20px; height: 60px; position: sticky; top: 0; z-index: 1000; }
+        .tabs { display: flex; background: var(--header-bg); color: var(--header-text); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .tab { flex: 1; padding: 15px; text-align: center; font-size: 11px; font-weight: bold; cursor: pointer; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; }
         .tab.active { opacity: 1; border-bottom: 3px solid var(--accent); }
 
+        /* Menu */
+        .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: var(--card); z-index: 2000; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 25px; box-shadow: -5px 0 15px rgba(0,0,0,0.2); }
+        .side-menu.open { right: 0; }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; }
+        .overlay.active { display: block; }
+
+        /* Containers & Cards */
         .container { max-width: 500px; margin: 0 auto; padding: 15px; display: none; }
         .container.active { display: block; }
-
-        /* Card Styling for True Dark Mode */
-        .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        label { font-size: 11px; color: var(--label); font-weight: bold; display: block; margin-bottom: 4px; text-transform: uppercase; }
-        input, select { width: 100%; padding: 14px; border: 1px solid var(--input-border); border-radius: 8px; margin-bottom: 15px; font-size: 16px; background: var(--input-bg); color: var(--text); outline: none; }
-        input:focus, select:focus { border-color: var(--accent); }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+        label { font-size: 10px; color: var(--label); font-weight: 800; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { width: 100%; padding: 14px; border: 1px solid var(--input-border); border-radius: 8px; margin-bottom: 15px; font-size: 16px; background: var(--input-bg); color: var(--text); }
+        
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
         .btn-blue { background: var(--accent); color: white; }
         .btn-green { background: var(--success); color: white; }
         
-        .summary-box { background: #1e293b; color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; text-align: center; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(148, 163, 184, 0.2); padding: 15px 0; }
-        
-        /* Menu Items FIXED for Dark Mode */
-        .menu-item { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.2); cursor: pointer; color: var(--text); }
-        
-        /* FIXED Theme Switch Styling */
-        .theme-switch { width: 44px; height: 22px; background: #cbd5e1; border-radius: 20px; position: relative; }
-        .theme-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: 0.3s; }
-        [data-theme="dark"] .theme-switch { background: var(--accent); }
-        [data-theme="dark"] .theme-switch::after { left: 24px; }
+        .summary-box { background: var(--header-bg); color: var(--header-text); padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; text-align: center; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
     </style>
 </head>
 <body>
 
 <div id="auth-screen">
+    <div style="font-size: 40px; margin-bottom: 20px;">💎</div>
     <div class="auth-card">
-        <h2 id="auth-title" style="margin-bottom:15px">Welcome</h2>
+        <h2 id="auth-title" style="margin-bottom:20px; text-align: center;">Welcome Back</h2>
         <input type="email" id="email" placeholder="Email Address">
         <input type="password" id="password" placeholder="Password">
         
-        <p style="text-align:right; font-size:12px; margin-bottom:15px;">
-            <span style="color:var(--accent); cursor:pointer" onclick="forgotPassword()">Forgot Password?</span>
+        <p style="text-align:right; font-size:12px; margin-bottom:20px;">
+            <span style="color:var(--accent); cursor:pointer; font-weight: 600;" onclick="forgotPass()">Forgot Password?</span>
         </p>
 
-        <button class="btn btn-blue" id="auth-btn" onclick="handleAuth()">Continue</button>
-        <p style="margin-top:20px; font-size:12px; text-align:center;" onclick="toggleAuth()">
-            Need an account? <span style="color:var(--accent); cursor:pointer; font-weight: bold;">Login</span>
+        <button class="btn btn-blue" id="auth-btn" onclick="handleAuth()">Sign In</button>
+        
+        <p style="margin-top:20px; font-size:12px; text-align:center; color: var(--label);" onclick="toggleAuth()">
+            Don't have an account? <span style="color:var(--accent); cursor:pointer; font-weight: bold;">Sign Up</span>
         </p>
     </div>
 </div>
 
-<div id="main-app">
+<div id="main-app" style="display:none;">
     <div class="navbar">
-        <span style="font-weight:bold; letter-spacing: 1px;">DIAMOND CALCULATOR</span>
-        <div class="hamburger" onclick="toggleMenu()">☰</div>
+        <b style="letter-spacing: 1px;">DIAMOND CALCULATOR</b>
+        <div onclick="toggleMenu()" style="cursor:pointer; font-size:24px;">☰</div>
     </div>
-    
     <div class="tabs">
-        <div class="tab active" onclick="showTab('entry')">ENTRY</div>
-        <div class="tab" onclick="showTab('prices')">PRICES</div>
-        <div class="tab" onclick="showTab('reports')">REPORTS</div>
+        <div class="tab active" onclick="showTab('entry')">Entry</div>
+        <div class="tab" onclick="showTab('prices')">Prices</div>
+        <div class="tab" onclick="showTab('reports')">Reports</div>
     </div>
 
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="side-menu">
         <h3 style="margin-bottom:25px">Settings</h3>
-        <div class="menu-item" onclick="toggleTheme()">
-            <span>Dark Appearance</span>
-            <div class="theme-switch"></div>
-        </div>
-
-        <div class="menu-item" onclick="forceUpdate()" style="color:var(--accent); margin-top:20px;">
-            <b>Update App (Fix Cache)</b>
-        </div>
-
-        <div class="menu-item" onclick="logout()" style="color:var(--danger); border:none; margin-top:30px">
-            <b>Sign Out</b>
-        </div>
+        <button class="btn btn-blue" style="margin-bottom:12px; background: #64748b;" onclick="toggleTheme()">🌓 Toggle Dark Mode</button>
+        <button class="btn btn-blue" style="margin-bottom:12px; background:#475569" onclick="forceUpdate()">🔄 Update App (Fix Cache)</button>
+        <button class="btn" style="background:var(--danger); color: white; margin-top: 40px;" onclick="auth.signOut()">Logout</button>
     </div>
 
     <div id="entry" class="container active">
         <div class="card">
             <label>Packet Number</label>
-            <input type="text" id="barcode" placeholder="e.g. PK-101">
-            <div style="display:flex; gap:12px;">
-                <div style="flex:1"><label>Shape</label>
-                    <select id="shape" onchange="lookupPrice()">
-                        <optgroup label="Fancy"><option value="Oval">Oval</option><option value="Marquise">Marquise</option><option value="Pear">Pear</option></optgroup>
-                        <optgroup label="Step"><option value="Round">Round</option><option value="Radiant">Radiant</option><option value="Emerald">Emerald</option><option value="Cushion">Cushion</option><option value="Princess">Princess</option></optgroup>
-                    </select>
-                </div>
-                <div style="flex:1"><label>Cut</label>
-                    <select id="cut" onchange="lookupPrice()"><option value="Ex">Ex</option><option value="VG">VG</option></select>
-                </div>
+            <input type="text" id="barcode" placeholder="Ex: PK-2024">
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1"><label>Shape</label><select id="shape" onchange="lookupPrice()"><option>Oval</option><option>Round</option><option>Pear</option><option>Marquise</option></select></div>
+                <div style="flex:1"><label>Cut</label><select id="cut" onchange="lookupPrice()"><option>Ex</option><option>VG</option></select></div>
             </div>
-            <label>Weight (carats)</label>
+            <label>Weight (ct)</label>
             <input type="number" id="weight" step="0.01" placeholder="0.00" oninput="lookupPrice()">
-            <label>Auto-calculated Price (₹)</label>
-            <input type="number" id="price" style="background:rgba(59,130,246,0.1); font-weight: bold;" readonly>
-            <button class="btn btn-green" onclick="saveStone()">Save Entry</button>
+            
+            <label>Rate per Carat (₹)</label>
+            <input type="number" id="price" placeholder="Manual Entry Allowed">
+            
+            <button class="btn btn-green" onclick="saveStone()">Save Record</button>
         </div>
     </div>
 
     <div id="prices" class="container">
         <div class="card">
-            <h3 style="margin-bottom:15px">Rate Configuration</h3>
-            <label>Department</label>
-            <select id="p_grp"><option value="Fancy">Fancy (Oval, Pear, MQ)</option><option value="Step">Step (Round, etc.)</option></select>
-            <label>Cut Grade</label>
-            <select id="p_cut"><option value="Ex">Excellent</option><option value="VG">Very Good</option></select>
+            <h3 style="margin-bottom:15px">Add Rate Rule</h3>
+            <label>Group</label><select id="p_grp"><option value="Fancy">Fancy (Oval, Pear, MQ)</option><option value="Step">Step (Round, etc.)</option></select>
+            <label>Cut Grade</label><select id="p_cut"><option>Ex</option><option>VG</option></select>
             <div style="display:flex; gap:10px;">
                 <div style="flex:1"><label>Min Wt</label><input type="number" id="p_min" placeholder="0.00"></div>
                 <div style="flex:1"><label>Max Wt</label><input type="number" id="p_max" placeholder="0.99"></div>
             </div>
-            <label>Rate per Carat (₹)</label>
-            <input type="number" id="p_amt" placeholder="Enter amount">
-            <button class="btn btn-blue" onclick="savePriceRule()">Save Rate Rule</button>
+            <label>Rate (₹)</label><input type="number" id="p_amt" placeholder="800">
+            <button class="btn btn-blue" onclick="savePriceRule()">Save Rule</button>
         </div>
         <div id="priceList"></div>
     </div>
 
     <div id="reports" class="container">
         <div class="summary-box">
-            <div><h2 id="totCount">0</h2><small>Items</small></div>
-            <div><h2 id="totWt">0.00</h2><small>Total Cts</small></div>
-            <div><h2 id="totVal">₹0</h2><small>Total Value</small></div>
+            <div><h3 id="totCount">0</h3><small>Stones</small></div>
+            <div><h3 id="totWt">0.00</h3><small>Weight</small></div>
+            <div><h3 id="totVal">₹0</h3><small>Value</small></div>
         </div>
-        <label>Filter Month</label>
         <input type="month" id="filterMonth" onchange="loadReports()">
         <div id="historyList"></div>
     </div>
 </div>
 
 <script>
-// Firebase Config
-const firebaseConfig = {
-    apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo",
-    authDomain: "daimond-calculator.firebaseapp.com",
-    projectId: "daimond-calculator",
-    storageBucket: "daimond-calculator.firebasestorage.app",
-    messagingSenderId: "1076337600089",
-    appId: "1:1076337600089:web:dce0e8433eb4551c563348"
-};
-
+const firebaseConfig = { apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo", authDomain: "daimond-calculator.firebaseapp.com", projectId: "daimond-calculator", storageBucket: "daimond-calculator.firebasestorage.app", messagingSenderId: "1076337600089", appId: "1:1076337600089:web:dce0e8433eb4551c563348" };
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+const auth = firebase.auth(), db = firebase.firestore();
 let userPrices = [];
 
-// NEW: Force Update Function to bypass Service Worker cache
-async function forceUpdate() {
-    if (confirm("Clear local cache and update app styling?")) {
-        if ('serviceWorker' in navigator) {
-            const regs = await navigator.serviceWorker.getRegistrations();
-            for(let r of regs) { r.unregister(); }
-        }
-        window.location.reload(true);
-    }
-}
+function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
+function toggleTheme() { const d = document.documentElement; d.getAttribute('data-theme') === 'dark' ? d.removeAttribute('data-theme') : d.setAttribute('data-theme', 'dark'); }
+async function forceUpdate() { if(confirm("Refresh app and fix cache?")) { const regs = await navigator.serviceWorker.getRegistrations(); for(let r of regs) r.unregister(); window.location.reload(true); } }
 
-// App Interactions
-function toggleMenu() {
-    document.getElementById('side-menu').classList.toggle('open');
-    document.getElementById('overlay').classList.toggle('active');
-}
-
-// FIXED: Corrected Theme Toggle Logic
-function toggleTheme() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const target = isDark ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', target);
-    localStorage.setItem('theme', target);
-}
-
-// Load saved theme
-const savedTheme = localStorage.getItem('theme') || 'light';
-document.documentElement.setAttribute('data-theme', savedTheme);
-
-// Authentication
-let isLoginMode = false;
+// Authentication Logic
+let isLoginMode = true;
 function toggleAuth() {
     isLoginMode = !isLoginMode;
-    document.getElementById('auth-title').innerText = isLoginMode ? "Login" : "Sign Up";
-    document.getElementById('auth-btn').innerText = isLoginMode ? "Login" : "Create Account";
-}
-
-// Re-added: Forgot Password Function
-async function forgotPassword() {
-    const email = document.getElementById('email').value;
-    if(!email) return alert("Please enter your email address first.");
-    try {
-        await auth.sendPasswordResetEmail(email);
-        alert("A password reset email has been sent. Please check your inbox.");
-    } catch(e) { alert(e.message); }
+    document.getElementById('auth-title').innerText = isLoginMode ? "Welcome Back" : "Create Account";
+    document.getElementById('auth-btn').innerText = isLoginMode ? "Sign In" : "Register";
 }
 
 async function handleAuth() {
-    const email = document.getElementById('email').value;
-    const pass = document.getElementById('password').value;
-    if(!email || !pass) return alert("Please fill all fields");
-    try {
-        if(isLoginMode) await auth.signInWithEmailAndPassword(email, pass);
-        else await auth.createUserWithEmailAndPassword(email, pass);
-    } catch(e) { alert(e.message); }
+    const e = document.getElementById('email').value, p = document.getElementById('password').value;
+    if(!e || !p) return alert("Enter email and password");
+    try { 
+        if(isLoginMode) await auth.signInWithEmailAndPassword(e, p); 
+        else await auth.createUserWithEmailAndPassword(e, p); 
+    } catch(err) { alert(err.message); }
 }
 
-auth.onAuthStateChanged(user => {
-    if(user) {
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('main-app').style.display = 'block';
+async function forgotPass() { 
+    const e = document.getElementById('email').value; 
+    if(!e) return alert("Please type your email address first."); 
+    try {
+        await auth.sendPasswordResetEmail(e);
+        alert("Reset link sent! Check your inbox.");
+    } catch(err) { alert(err.message); }
+}
+
+auth.onAuthStateChanged(u => {
+    document.getElementById('auth-screen').style.display = u ? 'none' : 'flex';
+    document.getElementById('main-app').style.display = u ? 'block' : 'none';
+    if(u) { 
         document.getElementById('filterMonth').value = new Date().toISOString().slice(0,7);
-        loadPrices(); loadReports();
-    } else {
-        document.getElementById('auth-screen').style.display = 'flex';
-        document.getElementById('main-app').style.display = 'none';
+        loadPrices(); loadReports(); 
     }
 });
 
-function logout() { auth.signOut(); toggleMenu(); }
-
-// Database Logic
+// App Logic
 async function savePriceRule() {
-    const rule = { grp: document.getElementById('p_grp').value, cut: document.getElementById('p_cut').value, min: parseFloat(document.getElementById('p_min').value), max: parseFloat(document.getElementById('p_max').value), amt: parseFloat(document.getElementById('p_amt').value) };
-    if(isNaN(rule.amt)) return alert("Enter valid rate");
-    await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(rule);
+    const r = { grp: document.getElementById('p_grp').value, cut: document.getElementById('p_cut').value, min: parseFloat(document.getElementById('p_min').value), max: parseFloat(document.getElementById('p_max').value), amt: parseFloat(document.getElementById('p_amt').value) };
+    if(isNaN(r.amt)) return alert("Enter a valid rate");
+    await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(r);
     loadPrices();
 }
 
 async function loadPrices() {
     const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();
-    userPrices = []; let html = '';
+    userPrices = []; let h = '';
     snap.forEach(doc => { 
         const r = doc.data(); userPrices.push(r); 
-        html += `<div class="card" style="display:flex; justify-content:space-between; align-items:center; padding: 12px 15px;">
-            <div style="font-size:13px"><b>${r.grp} (${r.cut})</b><br><span style="color:var(--label)">Range: ${r.min}-${r.max}ct</span></div>
-            <div style="text-align:right"><b>₹${r.amt}</b><br><span style="color:var(--danger); font-size:11px; cursor:pointer" onclick="deleteDoc('prices','${doc.id}',loadPrices)">Remove</span></div>
-        </div>`; 
+        h += `<div class="card list-item"><span><b>${r.grp}</b> | ${r.min}-${r.max}ct</span><b>₹${r.amt} <span onclick="del('prices','${doc.id}',loadPrices)" style="color:var(--danger); margin-left:15px; cursor:pointer">✕</span></b></div>`; 
     });
-    document.getElementById('priceList').innerHTML = html;
+    document.getElementById('priceList').innerHTML = h;
 }
 
 function lookupPrice() {
-    const shp = document.getElementById('shape').value;
-    const cut = document.getElementById('cut').value;
-    const wt = parseFloat(document.getElementById('weight').value) || 0;
+    const shp = document.getElementById('shape').value, cut = document.getElementById('cut').value, wt = parseFloat(document.getElementById('weight').value) || 0;
     const grp = ["Oval", "Marquise", "Pear"].includes(shp) ? "Fancy" : "Step";
     const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);
-    document.getElementById('price').value = match ? match.amt : 0;
+    if(match) document.getElementById('price').value = match.amt;
 }
 
 async function saveStone() {
-    const stone = { barcode: document.getElementById('barcode').value || "No ID", shape: document.getElementById('shape').value, cut: document.getElementById('cut').value, weight: parseFloat(document.getElementById('weight').value), price: parseFloat(document.getElementById('price').value), month: new Date().toISOString().slice(0, 7), timestamp: firebase.firestore.FieldValue.serverTimestamp() };
-    if(isNaN(stone.weight)) return alert("Weight is missing!");
-    await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(stone);
+    const s = { barcode: document.getElementById('barcode').value || "No ID", shape: document.getElementById('shape').value, cut: document.getElementById('cut').value, weight: parseFloat(document.getElementById('weight').value), price: parseFloat(document.getElementById('price').value), month: new Date().toISOString().slice(0,7), timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+    if(isNaN(s.weight) || isNaN(s.price)) return alert("Check values");
+    await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(s);
     document.getElementById('barcode').value = ''; document.getElementById('weight').value = '';
-    loadReports(); alert("Success: Record Saved");
+    loadReports(); alert("Record Saved!");
 }
 
 async function loadReports() {
-    const month = document.getElementById('filterMonth').value;
-    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones").where("month", "==", month).orderBy("timestamp", "desc").get();
-    let html = '', tC = 0, tW = 0, tV = 0;
+    const m = document.getElementById('filterMonth').value;
+    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones").where("month", "==", m).get();
+    let h = '', tC = 0, tW = 0, tV = 0;
     snap.forEach(doc => { 
-        const s = doc.data(); const total = s.weight * s.price; tC++; tW += s.weight; tV += total; 
-        html += `<div class="history-item"><div><b style="font-size:15px">${s.barcode}</b><br><small style="color:var(--label)">${s.shape} • ${s.cut} • ${s.weight}ct</small></div><div style="text-align:right"><b>₹${total.toLocaleString()}</b><br><small style="color:var(--danger); cursor:pointer" onclick="deleteDoc('stones','${doc.id}',loadReports)">Delete</small></div></div>`; 
+        const s = doc.data(); tC++; tW += s.weight; tV += (s.weight * s.price); 
+        h += `<div class="list-item"><div><b>${s.barcode}</b><br><small>${s.weight}ct @ ₹${s.price}</small></div><b>₹${Math.round(s.weight * s.price).toLocaleString()} <span onclick="del('stones','${doc.id}',loadReports)" style="color:var(--danger); margin-left:15px; cursor:pointer">✕</span></b></div>`; 
     });
-    document.getElementById('historyList').innerHTML = html; document.getElementById('totCount').innerText = tC; document.getElementById('totWt').innerText = tW.toFixed(2); document.getElementById('totVal').innerText = '₹' + tV.toLocaleString();
+    document.getElementById('totCount').innerText = tC; 
+    document.getElementById('totWt').innerText = tW.toFixed(2); 
+    document.getElementById('totVal').innerText = "₹" + Math.round(tV).toLocaleString();
+    document.getElementById('historyList').innerHTML = h;
 }
 
-async function deleteDoc(coll, id, cb) { if(confirm("Confirm Delete?")) { await db.collection("users").doc(auth.currentUser.uid).collection(coll).doc(id).delete(); cb(); } }
+async function del(c, id, cb) { if(confirm("Permanently delete?")) { await db.collection("users").doc(auth.currentUser.uid).collection(c).doc(id).delete(); cb(); } }
 
 function showTab(id) {
-    document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.container, .tab').forEach(el => el.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     event.currentTarget.classList.add('active');
 }
