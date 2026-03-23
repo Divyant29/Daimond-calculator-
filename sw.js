@@ -1,10 +1,15 @@
-const cacheName = 'diamond-mgr-v2';
-const assets = [
+
+const CACHE_NAME = 'diamond-mgr-v2'; 
+const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './icon.png'
+  './icon.png',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js'
 ];
+
 
 // Install Service Worker and cache essential files
 self.addEventListener('install', e => {
