@@ -4,78 +4,94 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diamond Manager</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.png">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
-        :root { --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --primary: #0f172a; --accent: #3b82f6; --danger: #ef4444; --success: #10b981; }
-        [data-theme="dark"] { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --primary: #020617; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
-        body { background: var(--bg); color: var(--text); transition: 0.3s; }
-        .navbar { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .tabs { display: flex; background: var(--primary); }
-        .tab { flex: 1; padding: 15px; text-align: center; color: white; opacity: 0.6; cursor: pointer; font-size: 12px; font-weight: bold; }
-        .tab.active { opacity: 1; border-bottom: 3px solid var(--accent); }
-        .container { max-width: 500px; margin: auto; padding: 15px; display: none; }
-        .container.active { display: block; }
-        .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0 15px; border: 1px solid #cbd5e1; border-radius: 8px; background: var(--card); color: var(--text); }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; }
-        .btn-blue { background: var(--accent); }
-        .btn-green { background: var(--success); }
+        :root { --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --accent: #3b82f6; --danger: #ef4444; --success: #10b981; }
+        [data-theme="dark"] { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 20px; transition: 0.3s; }
+        
+        .navbar { background: #0f172a; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .hamburger { font-size: 24px; cursor: pointer; }
+
         .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: var(--card); z-index: 1000; padding: 20px; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,0,0,0.1); }
         .side-menu.open { right: 0; }
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; }
         .overlay.active { display: block; }
-        .price-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+
+        .tabs { display: flex; background: #1e293b; }
+        .tab { flex: 1; padding: 15px; text-align: center; color: white; cursor: pointer; opacity: 0.6; font-size: 11px; font-weight: bold; }
+        .tab.active { opacity: 1; border-bottom: 3px solid var(--accent); }
+
+        .container { max-width: 500px; margin: auto; padding: 15px; display: none; }
+        .container.active { display: block; }
+
+        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; background: var(--card); color: var(--text); font-size: 16px; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; }
+        .row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
-<div id="auth-screen" style="display:flex; height:100vh; align-items:center; justify-content:center; background:var(--primary);">
-    <div class="card" style="width: 90%; max-width: 350px;">
-        <h2 id="auth-title">Login</h2>
+<div id="auth-screen" style="display:flex; height:100vh; align-items:center; justify-content:center; background:#0f172a; padding:20px;">
+    <div class="card" style="width: 100%; max-width: 350px;">
+        <h2 style="margin-bottom:15px">Diamond Manager</h2>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Password">
-        <button class="btn btn-blue" onclick="handleAuth()">Submit</button>
-        <p onclick="toggleAuth()" style="text-align:center; margin-top:15px; font-size:12px; cursor:pointer; color:var(--accent)">Switch to Sign Up</p>
+        <button class="btn" style="background:var(--accent)" onclick="handleAuth()">Login / Sign Up</button>
     </div>
 </div>
 
 <div id="main-app" style="display:none;">
     <div class="navbar">
-        <b>DIAMOND MANAGER</b>
-        <div onclick="toggleMenu()">☰</div>
+        <b>DIAMOND MGR</b> 
+        <div class="hamburger" onclick="toggleMenu()">☰</div>
     </div>
+    
     <div class="tabs">
         <div class="tab active" onclick="showTab('entry')">ENTRY</div>
         <div class="tab" onclick="showTab('prices')">PRICES</div>
         <div class="tab" onclick="showTab('reports')">REPORTS</div>
     </div>
 
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+    <div class="side-menu" id="side-menu">
+        <h3 style="margin-bottom:20px">Settings</h3>
+        <button class="btn" style="background:var(--accent)" onclick="toggleTheme()">Toggle Dark Mode</button>
+        <button class="btn" style="background:var(--danger)" onclick="logout()">Logout</button>
+    </div>
+
     <div id="entry" class="container active">
         <div class="card">
-            <label>Packet No.</label><input type="text" id="barcode">
-            <div style="display:flex; gap:10px;">
-                <div style="flex:1"><label>Shape</label><select id="shape" onchange="lookupPrice()"><option>Oval</option><option>Round</option><option>Pear</option><option>Marquise</option></select></div>
-                <div style="flex:1"><label>Cut</label><select id="cut" onchange="lookupPrice()"><option>Ex</option><option>VG</option></select></div>
-            </div>
-            <label>Weight</label><input type="number" id="weight" step="0.01" oninput="lookupPrice()">
-            <label>Rate (₹)</label><input type="number" id="price">
-            <button class="btn btn-green" onclick="saveStone()">SAVE STONE</button>
+            <input type="text" id="barcode" placeholder="Packet Number">
+            <select id="shape" onchange="lookupPrice()">
+                <option value="Oval">Oval</option>
+                <option value="Round">Round</option>
+                <option value="Pear">Pear</option>
+                <option value="Marquise">Marquise</option>
+                <option value="Radiant">Radiant</option>
+            </select>
+            <select id="cut" onchange="lookupPrice()"><option>Ex</option><option>VG</option></select>
+            <input type="number" id="weight" placeholder="Weight (ct)" step="0.01" oninput="lookupPrice()">
+            <input type="number" id="price" placeholder="Rate ₹">
+            <button class="btn" style="background:var(--success)" onclick="saveStone()">SAVE STONE</button>
         </div>
     </div>
 
     <div id="prices" class="container">
         <div class="card">
             <h3>Add Rate Rule</h3>
-            <select id="p_grp"><option value="Fancy">Fancy (Oval, MQ, Pear)</option><option value="Step">Step (Round, etc.)</option></select>
-            <select id="p_cut"><option>Ex</option><option>VG</option></select>
-            <div style="display:flex; gap:10px;"><input type="number" id="p_min" placeholder="Min"><input type="number" id="p_max" placeholder="Max"></div>
-            <input type="number" id="p_amt" placeholder="Rate (₹)">
-            <button class="btn btn-blue" onclick="savePriceRule()">ADD RULE</button>
+            <select id="p_grp">
+                <option value="Fancy">Fancy (Oval, MQ, Pear)</option>
+                <option value="Step">Step (Round, Radiant, etc.)</option>
+            </select>
+            <input type="number" id="p_min" placeholder="Min Weight">
+            <input type="number" id="p_max" placeholder="Max Weight">
+            <input type="number" id="p_amt" placeholder="Rate per ct (₹)">
+            <button class="btn" style="background:var(--accent)" onclick="savePriceRule()">ADD PRICE RULE</button>
         </div>
         <div id="priceList"></div>
     </div>
@@ -86,77 +102,65 @@
     </div>
 </div>
 
-<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
-<div class="side-menu" id="side-menu">
-    <h3>Settings</h3><br>
-    <button class="btn btn-blue" onclick="toggleTheme()">Toggle Dark Mode</button><br><br>
-    <button class="btn" style="background:#64748b" onclick="forceUpdate()">Update App Version</button><br><br>
-    <button class="btn" style="background:var(--danger)" onclick="auth.signOut()">Logout</button>
-</div>
-
 <script>
 const firebaseConfig = { apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo", authDomain: "daimond-calculator.firebaseapp.com", projectId: "daimond-calculator", storageBucket: "daimond-calculator.firebasestorage.app", messagingSenderId: "1076337600089", appId: "1:1076337600089:web:dce0e8433eb4551c563348" };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.firestore();
 let userPrices = [];
 
-function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
-function toggleTheme() { 
-    const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', t);
+// Menu & Theme
+function toggleMenu() {
+    document.getElementById('side-menu').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('active');
+}
+function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
 }
 
-// FORCE UPDATE BUTTON
-async function forceUpdate() {
-    if ('serviceWorker' in navigator) {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        for(let r of regs) { await r.unregister(); }
-        window.location.reload(true);
-    }
-}
-
-// AUTH
-let isLogin = true;
-function toggleAuth() { isLogin = !isLogin; document.getElementById('auth-title').innerText = isLogin ? "Login" : "Sign Up"; }
+// Auth
 async function handleAuth() {
     const e = document.getElementById('email').value, p = document.getElementById('password').value;
-    try { isLogin ? await auth.signInWithEmailAndPassword(e, p) : await auth.createUserWithEmailAndPassword(e, p); } catch(err) { alert(err.message); }
+    try { await auth.signInWithEmailAndPassword(e, p); } catch { await auth.createUserWithEmailAndPassword(e, p); }
 }
-
-auth.onAuthStateChanged(user => {
-    document.getElementById('auth-screen').style.display = user ? 'none' : 'flex';
-    document.getElementById('main-app').style.display = user ? 'block' : 'none';
-    if(user) { loadPrices(); loadReports(); }
+auth.onAuthStateChanged(u => {
+    document.getElementById('auth-screen').style.display = u ? 'none' : 'flex';
+    document.getElementById('main-app').style.display = u ? 'block' : 'none';
+    if(u) { loadPrices(); loadReports(); }
 });
+function logout() { auth.signOut(); toggleMenu(); }
 
-// CORE LOGIC
+// Logic
 async function savePriceRule() {
-    const rule = { grp: document.getElementById('p_grp').value, cut: document.getElementById('p_cut').value, min: parseFloat(document.getElementById('p_min').value), max: parseFloat(document.getElementById('p_max').value), amt: parseFloat(document.getElementById('p_amt').value) };
-    if(Object.values(rule).some(v => isNaN(v) && typeof v !== 'string')) return alert("Fill all fields");
-    await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(rule);
+    const r = { grp: document.getElementById('p_grp').value, min: parseFloat(document.getElementById('p_min').value), max: parseFloat(document.getElementById('p_max').value), amt: parseFloat(document.getElementById('p_amt').value) };
+    if(isNaN(r.min) || isNaN(r.amt)) return alert("Please fill all fields");
+    await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(r);
     loadPrices();
 }
 
 async function loadPrices() {
     const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();
-    userPrices = []; let html = '';
-    snap.forEach(doc => {
-        const r = doc.data(); userPrices.push(r);
-        html += `<div class="card price-row"><span>${r.grp} | ${r.min}-${r.max}ct | <b>₹${r.amt}</b></span><button onclick="deleteDoc('prices','${doc.id}',loadPrices)" style="color:red; background:none; border:none; font-size:18px;">✕</button></div>`;
+    userPrices = []; let h = '';
+    snap.forEach(d => {
+        const r = d.data(); userPrices.push(r);
+        h += `<div class="card row">
+            <span>${r.grp} | ${r.min}-${r.max}ct | <b>₹${r.amt}</b></span>
+            <button onclick="del('prices','${d.id}',loadPrices)" style="color:var(--danger); background:none; border:none; font-size:18px">✕</button>
+        </div>`;
     });
-    document.getElementById('priceList').innerHTML = html;
+    document.getElementById('priceList').innerHTML = h;
 }
 
 function lookupPrice() {
-    const shp = document.getElementById('shape').value, cut = document.getElementById('cut').value, wt = parseFloat(document.getElementById('weight').value) || 0;
+    const shp = document.getElementById('shape').value, wt = parseFloat(document.getElementById('weight').value) || 0;
     const grp = ["Oval", "Marquise", "Pear"].includes(shp) ? "Fancy" : "Step";
-    const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);
+    const match = userPrices.find(r => r.grp === grp && wt >= r.min && wt <= r.max);
     document.getElementById('price').value = match ? match.amt : "";
 }
 
 async function saveStone() {
     const s = { barcode: document.getElementById('barcode').value, shape: document.getElementById('shape').value, cut: document.getElementById('cut').value, weight: parseFloat(document.getElementById('weight').value), price: parseFloat(document.getElementById('price').value), month: new Date().toISOString().slice(0,7), timestamp: firebase.firestore.FieldValue.serverTimestamp() };
-    if(isNaN(s.weight)) return alert("Invalid Weight");
+    if(isNaN(s.weight)) return alert("Weight is empty!");
     await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(s);
     alert("Saved!"); loadReports();
 }
@@ -164,171 +168,23 @@ async function saveStone() {
 async function loadReports() {
     const m = document.getElementById('filterMonth').value || new Date().toISOString().slice(0,7);
     const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones").where("month", "==", m).get();
-    let html = '';
-    snap.forEach(doc => {
-        const d = doc.data();
-        html += `<div class="card price-row"><div><b>${d.barcode}</b><br><small>${d.weight}ct @ ₹${d.price}</small></div><button onclick="deleteDoc('stones','${doc.id}',loadReports)" style="color:red; background:none; border:none;">Delete</button></div>`;
+    let h = '';
+    snap.forEach(d => {
+        const s = d.data();
+        h += `<div class="card row">
+            <div><b>${s.barcode}</b><br><small>${s.weight}ct @ ₹${s.price}</small></div>
+            <button onclick="del('stones','${d.id}',loadReports)" style="color:var(--danger); background:none; border:none; font-size:12px">Delete</button>
+        </div>`;
     });
-    document.getElementById('historyList').innerHTML = html;
+    document.getElementById('historyList').innerHTML = h;
 }
 
-async function deleteDoc(c, id, cb) { if(confirm("Delete?")) { await db.collection("users").doc(auth.currentUser.uid).collection(c).doc(id).delete(); cb(); } }
+async function del(c, id, cb) { if(confirm("Delete item?")) { await db.collection("users").doc(auth.currentUser.uid).collection(c).doc(id).delete(); cb(); } }
 
 function showTab(id) {
     document.querySelectorAll('.container, .tab').forEach(el => el.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     event.currentTarget.classList.add('active');
-}
-</script>
-</body>
-</html>
-document.documentElement.setAttribute('data-theme', savedTheme);
-
-// AUTH logic remains same...
-let isLoginMode = false;
-function toggleAuth() {
-    isLoginMode = !isLoginMode;
-    document.getElementById('auth-title').innerText = isLoginMode ? "Login" : "Sign Up";
-    document.getElementById('auth-btn').innerText = isLoginMode ? "Login" : "Create Account";
-    document.getElementById('toggle-text').innerText = isLoginMode ? "Don't have an account?" : "Already have an account?";
-    document.getElementById('toggle-link').innerText = isLoginMode ? "Sign Up" : "Login";
-    document.getElementById('forgot-pass-container').style.display = isLoginMode ? "block" : "none";
-}
-async function forgotPassword() {
-    const email = document.getElementById('email').value;
-    if (!email) return alert("Enter email first");
-    try { await auth.sendPasswordResetEmail(email); alert("Reset email sent!"); } catch(e) { alert(e.message); }
-}
-async function handleAuth() {
-    const email = document.getElementById('email').value;
-    const pass = document.getElementById('password').value;
-    try {
-        if(isLoginMode) await auth.signInWithEmailAndPassword(email, pass);
-        else await auth.createUserWithEmailAndPassword(email, pass);
-    } catch(e) { alert(e.message); }
-}
-auth.onAuthStateChanged(user => {
-    if(user) {
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('main-app').style.display = 'block';
-        document.getElementById('filterMonth').value = new Date().toISOString().slice(0,7);
-        loadPrices(); loadReports();
-    } else {
-        document.getElementById('auth-screen').style.display = 'flex';
-        document.getElementById('main-app').style.display = 'none';
-    }
-});
-function logout() { auth.signOut(); toggleMenu(); }
-
-async function savePriceRule() {
-    const rule = {
-        grp: document.getElementById('p_grp').value,
-        cut: document.getElementById('p_cut').value,
-        min: parseFloat(document.getElementById('p_min').value),
-        max: parseFloat(document.getElementById('p_max').value),
-        amt: parseFloat(document.getElementById('p_amt').value)
-    };
-    if(isNaN(rule.min) || isNaN(rule.amt)) return alert("Fill all fields");
-    await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(rule);
-    loadPrices();
-}
-
-async function loadPrices() {
-    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();
-    userPrices = [];
-    let html = '';
-    snap.forEach(doc => {
-        const r = doc.data();
-        userPrices.push(r);
-        html += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-            <span>${r.grp} | ${r.min}-${r.max}ct <b>₹${r.amt}</b></span>
-            <button onclick="deleteDoc('prices','${doc.id}',loadPrices)" style="background:none; border:none; color:var(--danger); font-weight:bold; cursor:pointer">✕</button>
-        </div>`;
-    });
-    document.getElementById('priceList').innerHTML = html;
-}
-
-function lookupPrice() {
-    const shp = document.getElementById('shape').value;
-    const cut = document.getElementById('cut').value;
-    const wt = parseFloat(document.getElementById('weight').value) || 0;
-    const grp = ["Oval", "Marquise", "Pear"].includes(shp) ? "Fancy" : "Step";
-    const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);
-    document.getElementById('price').value = match ? match.amt : "";
-}
-
-async function saveStone() {
-    const now = new Date();
-    const stone = {
-        barcode: document.getElementById('barcode').value || "No ID",
-        shape: document.getElementById('shape').value,
-        cut: document.getElementById('cut').value,
-        weight: parseFloat(document.getElementById('weight').value),
-        price: parseFloat(document.getElementById('price').value),
-        month: now.toISOString().slice(0, 7),
-        dateStr: `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear().toString().slice(-2)}`,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    if(isNaN(stone.weight)) return alert("Weight missing!");
-    await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(stone);
-    document.getElementById('barcode').value = ''; document.getElementById('weight').value = '';
-    loadReports();
-    alert("Saved!");
-}
-
-async function loadReports() {
-    const month = document.getElementById('filterMonth').value;
-    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones")
-        .where("month", "==", month).orderBy("timestamp", "desc").get();
-    let html = '', tC = 0, tW = 0, tV = 0;
-    snap.forEach(doc => {
-        const s = doc.data();
-        const total = s.weight * s.price;
-        tC++; tW += s.weight; tV += total;
-        html += `<div class="history-item">
-            <div><b>${s.barcode}</b> <small>${s.dateStr}</small><br><small>${s.shape} (${s.cut}) | ${s.weight}ct</small></div>
-            <div style="text-align:right">₹${total.toLocaleString()}<br>
-                <small onclick="openEdit('${doc.id}','${s.barcode}',${s.weight},${s.price})" style="color:var(--accent); cursor:pointer">Edit</small> | 
-                <small onclick="deleteDoc('stones','${doc.id}',loadReports)" style="color:var(--danger); cursor:pointer">Delete</small>
-            </div>
-        </div>`;
-    });
-    document.getElementById('historyList').innerHTML = html;
-    document.getElementById('totCount').innerText = tC;
-    document.getElementById('totWt').innerText = tW.toFixed(2);
-    document.getElementById('totVal').innerText = '₹' + tV.toLocaleString();
-}
-
-function openEdit(id, barcode, weight, price) {
-    document.getElementById('edit-id').value = id;
-    document.getElementById('edit-barcode').value = barcode;
-    document.getElementById('edit-weight').value = weight;
-    document.getElementById('edit-price').value = price;
-    document.getElementById('edit-modal').style.display = 'flex';
-}
-function closeEdit() { document.getElementById('edit-modal').style.display = 'none'; }
-async function updateStone() {
-    const id = document.getElementById('edit-id').value;
-    const update = {
-        barcode: document.getElementById('edit-barcode').value,
-        weight: parseFloat(document.getElementById('edit-weight').value),
-        price: parseFloat(document.getElementById('edit-price').value)
-    };
-    await db.collection("users").doc(auth.currentUser.uid).collection("stones").doc(id).update(update);
-    closeEdit(); loadReports(); alert("Updated!");
-}
-
-async function deleteDoc(coll, id, cb) { if(confirm("Delete item?")) { await db.collection("users").doc(auth.currentUser.uid).collection(coll).doc(id).delete(); cb(); } }
-
-function showTab(id) {
-    document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    event.currentTarget.classList.add('active');
-}
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); });
 }
 </script>
 </body>
