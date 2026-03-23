@@ -120,7 +120,7 @@
             <label>Packet Number</label>
             <input type="text" id="barcode" placeholder="Ex: PK-2024">
             <div style="display:flex; gap:10px;">
-                <div style="flex:1"><label>Shape</label><select id="shape" onchange="lookupPrice()"><option>Oval</option><option>Round</option><option>Pear</option><option>Marquise</option></select></div>
+                <div style="flex:1"><label>Shape</label><select id="shape" onchange="lookupPrice()"><option>Oval</option><option>Pear</option><option>Marquise</option><option>Radiant</option><option>Emrald</option><option>Cushion</option><option>Other</option></select></div>
                 <div style="flex:1"><label>Cut</label><select id="cut" onchange="lookupPrice()"><option>Ex</option><option>VG</option></select></div>
             </div>
             <label>Weight (ct)</label>
@@ -137,7 +137,7 @@
         <div class="card" style="border-top: 4px solid var(--accent);">
             <h3 style="margin-bottom:20px; font-size: 18px;">Add Rate Rule</h3>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div><label>Group</label><select id="p_grp"><option value="Fancy">Fancy</option><option value="Step">Step</option></select></div>
+                <div><label>Group</label><select id="p_grp"><option value="Fancy">Fancy(Oval,Pear,Marquis)</option><option value="Step">Stepcut(Radiant,Emrald,Cushion.....)</option></select></div>
                 <div><label>Cut Grade</label><select id="p_cut"><option>Ex</option><option>VG</option></select></div>
             </div>
             <div style="display:flex; gap:10px;">
