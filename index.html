@@ -82,7 +82,6 @@
 <body>
 
 <div id="auth-screen">
-    <img src="https://img.freepik.com/premium-photo/diamond-with-sparkles-logo-on-navy-blue-app-icon-background_644690-64.jpg" alt="Logo" class="auth-logo">
     <div class="auth-card">
         <h2 id="auth-title" style="margin-bottom:15px">Welcome</h2>
         <input type="email" id="email" placeholder="Email Address">
@@ -94,14 +93,14 @@
 
         <button class="btn btn-blue" id="auth-btn" onclick="handleAuth()">Continue</button>
         <p style="margin-top:20px; font-size:12px; text-align:center;" onclick="toggleAuth()">
-            Need an account? <span style="color:var(--accent); cursor:pointer; font-weight: bold;">Switch Mode</span>
+            Need an account? <span style="color:var(--accent); cursor:pointer; font-weight: bold;">Login</span>
         </p>
     </div>
 </div>
 
 <div id="main-app">
     <div class="navbar">
-        <span style="font-weight:bold; letter-spacing: 1px;">DIAMOND CLOUD</span>
+        <span style="font-weight:bold; letter-spacing: 1px;">DIAMOND CALCULATOR</span>
         <div class="hamburger" onclick="toggleMenu()">☰</div>
     </div>
     
@@ -120,7 +119,7 @@
         </div>
 
         <div class="menu-item" onclick="forceUpdate()" style="color:var(--accent); margin-top:20px;">
-            <b>Force Update (Fix Cache)</b>
+            <b>Update App (Fix Cache)</b>
         </div>
 
         <div class="menu-item" onclick="logout()" style="color:var(--danger); border:none; margin-top:30px">
