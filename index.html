@@ -7,7 +7,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <style>
         :root { 
             --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --label: #64748b;
@@ -53,14 +52,9 @@
         
         .summary-box { background: #1e293b; color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-around; text-align: center; }
         .history-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--label); padding: 10px 0; }
-        #scanner-container { display: none; width: 100%; height: 200px; background: #000; border-radius: 12px; margin-bottom: 15px; overflow: hidden; }
 
-        /* Menu Items */
-        .menu-item { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #eee; cursor: pointer; }
-        .theme-switch { width: 50px; height: 24px; background: #cbd5e1; border-radius: 20px; position: relative; }
-        .theme-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: 0.3s; }
-        [data-theme="dark"] .theme-switch { background: var(--accent); }
-        [data-theme="dark"] .theme-switch::after { left: 28px; }
+        /* Modal styling */
+        .modal-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; padding: 20px; }
     </style>
 </head>
 <body>
@@ -70,13 +64,10 @@
         <h2 id="auth-title" style="margin-bottom:15px">Sign Up</h2>
         <input type="email" id="email" placeholder="Email Address">
         <input type="password" id="password" placeholder="Password">
-        
         <button class="btn btn-blue" id="auth-btn" onclick="handleAuth()">Create Account</button>
-        
-        <p id="forgot-pass-container" style="display:none; text-align:right; font-size:12px; margin-bottom:10px;">
+        <p id="forgot-pass-container" style="display:none; text-align:right; font-size:11px; margin-bottom:10px;">
             <span style="color:var(--accent); cursor:pointer" onclick="forgotPassword()">Forgot Password?</span>
         </p>
-
         <p style="margin-top:15px; font-size:12px; text-align:center; color: #333">
             <span id="toggle-text">Already have an account?</span> 
             <span id="toggle-link" style="color:var(--accent); cursor:pointer" onclick="toggleAuth()">Login</span>
@@ -99,17 +90,16 @@
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="side-menu">
         <h3 style="margin-bottom:20px">Settings</h3>
-        <div class="menu-item" onclick="toggleTheme()">
+        <div class="menu-item" onclick="toggleTheme()" style="display:flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
             <span>Dark Mode</span>
-            <div class="theme-switch"></div>
+            <span>🌙</span>
         </div>
-        <div class="menu-item" onclick="logout()" style="color:var(--danger); border:none; margin-top:20px">
+        <div class="menu-item" onclick="logout()" style="color:var(--danger); margin-top:20px; cursor:pointer">
             <b>Logout</b>
         </div>
     </div>
 
     <div id="entry" class="container active">
-        <div id="scanner-container"></div>
         <div class="card">
             <label>Packet Number</label>
             <input type="text" id="barcode" placeholder="Barcode/Packet no.">
@@ -123,7 +113,7 @@
                 <div style="flex:1"><label>Cut</label><select id="cut" onchange="lookupPrice()"><option value="Ex">Ex</option><option value="VG">VG</option></select></div>
             </div>
             <label>Weight (ct)</label><input type="number" id="weight" step="0.01" oninput="lookupPrice()">
-            <label>Price/ct (₹)</label><input type="number" id="price" style="background:rgba(59,130,246,0.05)" placeholder="Suggested or custom">
+            <label>Price/ct (₹)</label><input type="number" id="price" style="background:rgba(59,130,246,0.1)" placeholder="Enter price">
             <button class="btn btn-green" onclick="saveStone()">SAVE</button>
         </div>
     </div>
@@ -151,6 +141,20 @@
     </div>
 </div>
 
+<div id="edit-modal" class="modal-container">
+    <div class="card" style="width: 100%; max-width: 400px;">
+        <h3 style="margin-bottom:15px">Edit Entry</h3>
+        <input type="hidden" id="edit-id">
+        <label>Barcode</label><input type="text" id="edit-barcode">
+        <label>Weight</label><input type="number" id="edit-weight" step="0.01">
+        <label>Price/ct (₹)</label><input type="number" id="edit-price">
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-blue" style="flex:1" onclick="updateStone()">UPDATE</button>
+            <button class="btn" style="flex:1; background:#64748b; color:white;" onclick="closeEdit()">CANCEL</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo",
@@ -166,23 +170,21 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 let userPrices = [];
 
-// MENU & THEME LOGIC
+// MENU & THEME
 function toggleMenu() {
     document.getElementById('side-menu').classList.toggle('open');
     document.getElementById('overlay').classList.toggle('active');
 }
-
 function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme');
     const target = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', target);
     localStorage.setItem('theme', target);
 }
-
 const savedTheme = localStorage.getItem('theme') || 'light';
 document.documentElement.setAttribute('data-theme', savedTheme);
 
-// UPDATED AUTH LOGIC
+// AUTH
 let isLoginMode = false;
 function toggleAuth() {
     isLoginMode = !isLoginMode;
@@ -190,33 +192,21 @@ function toggleAuth() {
     document.getElementById('auth-btn').innerText = isLoginMode ? "Login" : "Create Account";
     document.getElementById('toggle-text').innerText = isLoginMode ? "Don't have an account?" : "Already have an account?";
     document.getElementById('toggle-link').innerText = isLoginMode ? "Sign Up" : "Login";
-    
-    // Show/Hide Forgot Password container
     document.getElementById('forgot-pass-container').style.display = isLoginMode ? "block" : "none";
 }
-
 async function forgotPassword() {
     const email = document.getElementById('email').value;
-    if (!email) {
-        alert("Please enter your email address first.");
-        return;
-    }
-    try {
-        await auth.sendPasswordResetEmail(email);
-        alert("Password reset email sent!");
-    } catch(e) { alert(e.message); }
+    if (!email) return alert("Enter email first");
+    try { await auth.sendPasswordResetEmail(email); alert("Reset email sent!"); } catch(e) { alert(e.message); }
 }
-
 async function handleAuth() {
     const email = document.getElementById('email').value;
     const pass = document.getElementById('password').value;
-    if(!email || !pass) return alert("Please fill all fields");
     try {
         if(isLoginMode) await auth.signInWithEmailAndPassword(email, pass);
         else await auth.createUserWithEmailAndPassword(email, pass);
     } catch(e) { alert(e.message); }
 }
-
 auth.onAuthStateChanged(user => {
     if(user) {
         document.getElementById('auth-screen').style.display = 'none';
@@ -228,10 +218,9 @@ auth.onAuthStateChanged(user => {
         document.getElementById('main-app').style.display = 'none';
     }
 });
-
 function logout() { auth.signOut(); toggleMenu(); }
 
-// DATABASE & PRICING LOGIC
+// LOGIC
 async function savePriceRule() {
     const rule = {
         grp: document.getElementById('p_grp').value,
@@ -253,7 +242,7 @@ async function loadPrices() {
         userPrices.push(r);
         html += `<div class="card" style="display:flex; justify-content:space-between; font-size:12px">
             <span>${r.grp} (${r.cut}) | ${r.min}-${r.max}ct</span>
-            <b>₹${r.amt} <span style="color:red; margin-left:10px" onclick="deleteDoc('prices','${doc.id}',loadPrices)">✕</span></b>
+            <b>₹${r.amt} <span style="color:red; margin-left:10px; cursor:pointer" onclick="deleteDoc('prices','${doc.id}',loadPrices)">✕</span></b>
         </div>`;
     });
     document.getElementById('priceList').innerHTML = html;
@@ -265,27 +254,24 @@ function lookupPrice() {
     const wt = parseFloat(document.getElementById('weight').value) || 0;
     const grp = ["Oval", "Marquise", "Pear"].includes(shp) ? "Fancy" : "Step";
     const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);
-    
-    // Updates the input but allows user to change it afterward
     document.getElementById('price').value = match ? match.amt : 0;
 }
 
 async function saveStone() {
+    const now = new Date();
     const stone = {
         barcode: document.getElementById('barcode').value || "No ID",
         shape: document.getElementById('shape').value,
         cut: document.getElementById('cut').value,
         weight: parseFloat(document.getElementById('weight').value),
-        price: parseFloat(document.getElementById('price').value), // Captures manual changes
-        month: new Date().toISOString().slice(0, 7),
+        price: parseFloat(document.getElementById('price').value),
+        month: now.toISOString().slice(0, 7),
+        dateStr: `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear().toString().slice(-2)}`,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
     };
-    if(isNaN(stone.weight) || isNaN(stone.price)) return alert("Weight or Price is missing!");
-    
+    if(isNaN(stone.weight)) return alert("Weight is missing!");
     await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(stone);
-    document.getElementById('barcode').value = ''; 
-    document.getElementById('weight').value = '';
-    document.getElementById('price').value = '';
+    document.getElementById('barcode').value = ''; document.getElementById('weight').value = '';
     loadReports();
     alert("Stone Saved!");
 }
@@ -299,15 +285,44 @@ async function loadReports() {
         const s = doc.data();
         const total = s.weight * s.price;
         tC++; tW += s.weight; tV += total;
+        // DD/MM/YY is displayed here
+        const displayDate = s.dateStr || "N/A";
         html += `<div class="history-item">
-            <div><b>${s.barcode}</b><br><small>${s.shape} (${s.cut}) | ${s.weight}ct</small></div>
-            <div style="text-align:right">₹${total.toLocaleString()}<br><small style="color:red" onclick="deleteDoc('stones','${doc.id}',loadReports)">Delete</small></div>
+            <div>
+                <b>${s.barcode}</b> <small style="color:var(--label)">${displayDate}</small><br>
+                <small>${s.shape} (${s.cut}) | ${s.weight}ct</small>
+            </div>
+            <div style="text-align:right">
+                ₹${total.toLocaleString()}<br>
+                <small style="color:var(--accent); cursor:pointer" onclick="openEdit('${doc.id}','${s.barcode}',${s.weight},${s.price})">Edit</small> | 
+                <small style="color:red; cursor:pointer" onclick="deleteDoc('stones','${doc.id}',loadReports)">Delete</small>
+            </div>
         </div>`;
     });
     document.getElementById('historyList').innerHTML = html;
     document.getElementById('totCount').innerText = tC;
     document.getElementById('totWt').innerText = tW.toFixed(2);
     document.getElementById('totVal').innerText = '₹' + tV.toLocaleString();
+}
+
+// Edit Logic
+function openEdit(id, barcode, weight, price) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-barcode').value = barcode;
+    document.getElementById('edit-weight').value = weight;
+    document.getElementById('edit-price').value = price;
+    document.getElementById('edit-modal').style.display = 'flex';
+}
+function closeEdit() { document.getElementById('edit-modal').style.display = 'none'; }
+async function updateStone() {
+    const id = document.getElementById('edit-id').value;
+    const update = {
+        barcode: document.getElementById('edit-barcode').value,
+        weight: parseFloat(document.getElementById('edit-weight').value),
+        price: parseFloat(document.getElementById('edit-price').value)
+    };
+    await db.collection("users").doc(auth.currentUser.uid).collection("stones").doc(id).update(update);
+    closeEdit(); loadReports(); alert("Updated!");
 }
 
 async function deleteDoc(coll, id, cb) { if(confirm("Delete item?")) { await db.collection("users").doc(auth.currentUser.uid).collection(coll).doc(id).delete(); cb(); } }
@@ -321,3 +336,4 @@ function showTab(id) {
 </script>
 </body>
 </html>
+
