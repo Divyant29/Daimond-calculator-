@@ -168,8 +168,22 @@ let userPrices = [];
 // Initialize today's date
 document.getElementById('entryDate').valueAsDate = new Date();
 
+// Load saved theme on startup
+if(localStorage.getItem('theme') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); }
+
 function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
-function toggleTheme() { const d = document.documentElement; d.getAttribute('data-theme') === 'dark' ? d.removeAttribute('data-theme') : d.setAttribute('data-theme', 'dark'); }
+
+function toggleTheme() { 
+    const d = document.documentElement; 
+    if(d.getAttribute('data-theme') === 'dark') {
+        d.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+    } else {
+        d.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+    }
+}
+
 async function forceUpdate() { if(confirm("Refresh app and fix cache?")) { const regs = await navigator.serviceWorker.getRegistrations(); for(let r of regs) r.unregister(); window.location.reload(true); } }
 
 // Authentication Logic
