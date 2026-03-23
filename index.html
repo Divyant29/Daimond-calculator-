@@ -50,12 +50,30 @@
         .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
         .btn-blue { background: var(--accent); color: white; }
         .btn-green { background: var(--success); color: white; }
+
+        /* Edit Modal Styling */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background: var(--card); width: 100%; max-width: 400px; padding: 25px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
         
         .summary-box { background: var(--header-bg); color: var(--header-text); padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; text-align: center; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
     </style>
 </head>
 <body>
+
+<div class="modal-overlay" id="editModal">
+    <div class="modal-card">
+        <h3 style="margin-bottom:15px; color: var(--accent);">Edit Record</h3>
+        <input type="hidden" id="edit-id">
+        <label>Date</label><input type="date" id="edit-date">
+        <label>Packet Number</label><input type="text" id="edit-barcode">
+        <label>Weight (ct)</label><input type="number" id="edit-weight" step="0.01">
+        <label>Rate (₹)</label><input type="number" id="edit-price">
+        <button class="btn btn-green" onclick="updateStone()">Update Record</button>
+        <button class="btn" style="background:#64748b; color:white; margin-top:10px" onclick="closeModal()">Close</button>
+    </div>
+</div>
 
 <div id="auth-screen">
     <div style="font-size: 40px; margin-bottom: 20px;">💎</div>
@@ -97,6 +115,8 @@
 
     <div id="entry" class="container active">
         <div class="card">
+            <label>Date</label>
+            <input type="date" id="entryDate">
             <label>Packet Number</label>
             <input type="text" id="barcode" placeholder="Ex: PK-2024">
             <div style="display:flex; gap:10px;">
@@ -144,6 +164,9 @@ const firebaseConfig = { apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo", auth
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.firestore();
 let userPrices = [];
+
+// Initialize today's date
+document.getElementById('entryDate').valueAsDate = new Date();
 
 function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
 function toggleTheme() { const d = document.documentElement; d.getAttribute('data-theme') === 'dark' ? d.removeAttribute('data-theme') : d.setAttribute('data-theme', 'dark'); }
@@ -210,11 +233,47 @@ function lookupPrice() {
 }
 
 async function saveStone() {
-    const s = { barcode: document.getElementById('barcode').value || "No ID", shape: document.getElementById('shape').value, cut: document.getElementById('cut').value, weight: parseFloat(document.getElementById('weight').value), price: parseFloat(document.getElementById('price').value), month: new Date().toISOString().slice(0,7), timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+    const dVal = document.getElementById('entryDate').value;
+    const s = { 
+        date: dVal,
+        barcode: document.getElementById('barcode').value || "No ID", 
+        shape: document.getElementById('shape').value, 
+        cut: document.getElementById('cut').value, 
+        weight: parseFloat(document.getElementById('weight').value), 
+        price: parseFloat(document.getElementById('price').value), 
+        month: dVal.slice(0,7), 
+        timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+    };
     if(isNaN(s.weight) || isNaN(s.price)) return alert("Check values");
     await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(s);
     document.getElementById('barcode').value = ''; document.getElementById('weight').value = '';
     loadReports(); alert("Record Saved!");
+}
+
+// Edit Logic
+function openEditModal(id, date, barcode, weight, price) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-date').value = date;
+    document.getElementById('edit-barcode').value = barcode;
+    document.getElementById('edit-weight').value = weight;
+    document.getElementById('edit-price').value = price;
+    document.getElementById('editModal').classList.add('active');
+}
+
+function closeModal() { document.getElementById('editModal').classList.remove('active'); }
+
+async function updateStone() {
+    const id = document.getElementById('edit-id').value;
+    const dVal = document.getElementById('edit-date').value;
+    const data = {
+        date: dVal,
+        barcode: document.getElementById('edit-barcode').value,
+        weight: parseFloat(document.getElementById('edit-weight').value),
+        price: parseFloat(document.getElementById('edit-price').value),
+        month: dVal.slice(0,7)
+    };
+    await db.collection("users").doc(auth.currentUser.uid).collection("stones").doc(id).update(data);
+    closeModal(); loadReports(); alert("Updated Successfully!");
 }
 
 async function loadReports() {
@@ -223,7 +282,20 @@ async function loadReports() {
     let h = '', tC = 0, tW = 0, tV = 0;
     snap.forEach(doc => { 
         const s = doc.data(); tC++; tW += s.weight; tV += (s.weight * s.price); 
-        h += `<div class="list-item"><div><b>${s.barcode}</b><br><small>${s.weight}ct @ ₹${s.price}</small></div><b>₹${Math.round(s.weight * s.price).toLocaleString()} <span onclick="del('stones','${doc.id}',loadReports)" style="color:var(--danger); margin-left:15px; cursor:pointer">✕</span></b></div>`; 
+        const d = s.date ? s.date.split('-') : ['','',''];
+        const ddmmyy = d[0] ? `${d[2]}/${d[1]}/${d[0].slice(-2)}` : '--';
+        h += `<div class="list-item">
+                <div>
+                    <small style="color:var(--accent); font-weight:bold;">${ddmmyy}</small><br>
+                    <b>${s.barcode}</b><br>
+                    <small>${s.weight}ct @ ₹${s.price}</small>
+                </div>
+                <div style="text-align:right">
+                    <b>₹${Math.round(s.weight * s.price).toLocaleString()}</b><br>
+                    <span onclick="openEditModal('${doc.id}','${s.date}','${s.barcode}',${s.weight},${s.price})" style="color:var(--accent); font-size:11px; font-weight:bold; cursor:pointer; text-decoration:underline;">EDIT</span>
+                    <span onclick="del('stones','${doc.id}',loadReports)" style="color:var(--danger); margin-left:10px; font-size:11px; font-weight:bold; cursor:pointer;">✕</span>
+                </div>
+              </div>`; 
     });
     document.getElementById('totCount').innerText = tC; 
     document.getElementById('totWt').innerText = tW.toFixed(2); 
