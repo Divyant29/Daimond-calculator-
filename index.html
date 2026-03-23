@@ -70,9 +70,16 @@
         <h2 id="auth-title" style="margin-bottom:15px">Sign Up</h2>
         <input type="email" id="email" placeholder="Email Address">
         <input type="password" id="password" placeholder="Password">
+        
         <button class="btn btn-blue" id="auth-btn" onclick="handleAuth()">Create Account</button>
-        <p style="margin-top:15px; font-size:12px; text-align:center; color: #333" onclick="toggleAuth()">
-            Already have an account? <span style="color:var(--accent); cursor:pointer">Login</span>
+        
+        <p id="forgot-pass-container" style="display:none; text-align:right; font-size:12px; margin-bottom:10px;">
+            <span style="color:var(--accent); cursor:pointer" onclick="forgotPassword()">Forgot Password?</span>
+        </p>
+
+        <p style="margin-top:15px; font-size:12px; text-align:center; color: #333">
+            <span id="toggle-text">Already have an account?</span> 
+            <span id="toggle-link" style="color:var(--accent); cursor:pointer" onclick="toggleAuth()">Login</span>
         </p>
     </div>
 </div>
@@ -116,7 +123,7 @@
                 <div style="flex:1"><label>Cut</label><select id="cut" onchange="lookupPrice()"><option value="Ex">Ex</option><option value="VG">VG</option></select></div>
             </div>
             <label>Weight (ct)</label><input type="number" id="weight" step="0.01" oninput="lookupPrice()">
-            <label>Price/ct (₹)</label><input type="number" id="price" style="background:rgba(59,130,246,0.1)" readonly>
+            <label>Price/ct (₹)</label><input type="number" id="price" style="background:rgba(59,130,246,0.05)" placeholder="Suggested or custom">
             <button class="btn btn-green" onclick="saveStone()">SAVE</button>
         </div>
     </div>
@@ -172,21 +179,38 @@ function toggleTheme() {
     localStorage.setItem('theme', target);
 }
 
-// Load saved theme
 const savedTheme = localStorage.getItem('theme') || 'light';
 document.documentElement.setAttribute('data-theme', savedTheme);
 
-// AUTH LOGIC
+// UPDATED AUTH LOGIC
 let isLoginMode = false;
 function toggleAuth() {
     isLoginMode = !isLoginMode;
     document.getElementById('auth-title').innerText = isLoginMode ? "Login" : "Sign Up";
     document.getElementById('auth-btn').innerText = isLoginMode ? "Login" : "Create Account";
+    document.getElementById('toggle-text').innerText = isLoginMode ? "Don't have an account?" : "Already have an account?";
+    document.getElementById('toggle-link').innerText = isLoginMode ? "Sign Up" : "Login";
+    
+    // Show/Hide Forgot Password container
+    document.getElementById('forgot-pass-container').style.display = isLoginMode ? "block" : "none";
+}
+
+async function forgotPassword() {
+    const email = document.getElementById('email').value;
+    if (!email) {
+        alert("Please enter your email address first.");
+        return;
+    }
+    try {
+        await auth.sendPasswordResetEmail(email);
+        alert("Password reset email sent!");
+    } catch(e) { alert(e.message); }
 }
 
 async function handleAuth() {
     const email = document.getElementById('email').value;
     const pass = document.getElementById('password').value;
+    if(!email || !pass) return alert("Please fill all fields");
     try {
         if(isLoginMode) await auth.signInWithEmailAndPassword(email, pass);
         else await auth.createUserWithEmailAndPassword(email, pass);
@@ -207,7 +231,7 @@ auth.onAuthStateChanged(user => {
 
 function logout() { auth.signOut(); toggleMenu(); }
 
-// DATABASE LOGIC
+// DATABASE & PRICING LOGIC
 async function savePriceRule() {
     const rule = {
         grp: document.getElementById('p_grp').value,
@@ -241,6 +265,8 @@ function lookupPrice() {
     const wt = parseFloat(document.getElementById('weight').value) || 0;
     const grp = ["Oval", "Marquise", "Pear"].includes(shp) ? "Fancy" : "Step";
     const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);
+    
+    // Updates the input but allows user to change it afterward
     document.getElementById('price').value = match ? match.amt : 0;
 }
 
@@ -250,13 +276,16 @@ async function saveStone() {
         shape: document.getElementById('shape').value,
         cut: document.getElementById('cut').value,
         weight: parseFloat(document.getElementById('weight').value),
-        price: parseFloat(document.getElementById('price').value),
+        price: parseFloat(document.getElementById('price').value), // Captures manual changes
         month: new Date().toISOString().slice(0, 7),
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
     };
-    if(isNaN(stone.weight)) return alert("Weight is missing!");
+    if(isNaN(stone.weight) || isNaN(stone.price)) return alert("Weight or Price is missing!");
+    
     await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(stone);
-    document.getElementById('barcode').value = ''; document.getElementById('weight').value = '';
+    document.getElementById('barcode').value = ''; 
+    document.getElementById('weight').value = '';
+    document.getElementById('price').value = '';
     loadReports();
     alert("Stone Saved!");
 }
