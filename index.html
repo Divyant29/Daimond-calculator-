@@ -61,11 +61,6 @@
 
         /* Modal styling */
         .modal-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; padding: 20px; }
-        
-        /* ADDED: Search Bar Styling */
-        .search-container { position: relative; margin-bottom: 15px; }
-        .search-container input { padding-left: 35px; margin-bottom: 0; }
-        .search-icon { position: absolute; left: 12px; top: 12px; color: var(--label); }
     </style>
 </head>
 <body>
@@ -148,11 +143,8 @@
             <div><h4 id="totVal">₹0</h4><small>Value</small></div>
         </div>
         
-        <div class="search-container">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="searchInput" placeholder="Search barcode..." onkeyup="filterHistory()">
-        </div>
-
+        <input type="text" id="searchInput" placeholder="Search Barcode..." onkeyup="filterHistory()" style="margin-bottom:10px">
+        
         <input type="month" id="filterMonth" onchange="loadReports()">
         <div id="historyList"></div>
     </div>
@@ -186,8 +178,13 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ADDED: Firestore Offline Support
-db.settings({ persistence: true });
+// ONLY ADDED: Search script logic
+function filterHistory() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    document.querySelectorAll('.history-item').forEach(item => {
+        item.style.display = item.innerText.toLowerCase().includes(q) ? 'flex' : 'none';
+    });
+}
 
 let userPrices = [];
 
@@ -309,7 +306,7 @@ async function loadReports() {
         const displayDate = s.dateStr || "N/A";
         html += `<div class="history-item">
             <div>
-                <b class="barcode-text">${s.barcode}</b> <small style="color:var(--label)">${displayDate}</small><br>
+                <b>${s.barcode}</b> <small style="color:var(--label)">${displayDate}</small><br>
                 <small>${s.shape} (${s.cut}) | ${s.weight}ct</small>
             </div>
             <div style="text-align:right">
@@ -325,16 +322,6 @@ async function loadReports() {
     document.getElementById('totVal').innerText = '₹' + tV.toLocaleString();
 }
 
-// ADDED: Search Filter Function
-function filterHistory() {
-    const query = document.getElementById('searchInput').value.toLowerCase();
-    document.querySelectorAll('.history-item').forEach(item => {
-        const text = item.querySelector('.barcode-text').innerText.toLowerCase();
-        item.style.display = text.includes(query) ? 'flex' : 'none';
-    });
-}
-
-// Edit Logic
 function openEdit(id, barcode, weight, price) {
     document.getElementById('edit-id').value = id;
     document.getElementById('edit-barcode').value = barcode;
@@ -363,7 +350,7 @@ function showTab(id) {
     event.currentTarget.classList.add('active');
 }
 
-// ADDED: REGISTER SERVICE WORKER FOR PWA
+// ONLY ADDED: PWA Service Worker script
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').then(reg => console.log('SW Registered')).catch(err => console.log(err));
