@@ -1,322 +1,255 @@
-<!DOCTYPE html><html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diamond Manager</title><link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f172a">
-<link rel="apple-touch-icon" href="icon.png"><script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script><style>
-
-:root { 
---bg:#f1f5f9;
---card:#ffffff;
---text:#0f172a;
---label:#64748b;
---header-bg:#1e293b;
---header-text:#ffffff;
---input-bg:#ffffff;
---input-border:#cbd5e1;
---accent:#3b82f6;
---success:#10b981;
---danger:#ef4444;
---card-inner:#f8fafc;
-}
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Segoe UI;
-}
-
-body{
-background:var(--bg);
-color:var(--text);
-}
-
-.navbar{
-display:flex;
-justify-content:space-between;
-align-items:center;
-background:var(--header-bg);
-color:white;
-padding:15px 20px;
-}
-
-.container{
-max-width:500px;
-margin:auto;
-padding:20px;
-display:none;
-}
-
-.container.active{
-display:block;
-}
-
-.main-card{
-background:white;
-padding:20px;
-border-radius:16px;
-margin-bottom:20px;
-box-shadow:0 4px 15px rgba(0,0,0,0.1);
-}
-
-input{
-width:100%;
-padding:12px;
-margin-bottom:15px;
-border-radius:10px;
-border:1px solid #ccc;
-}
-
-.btn{
-width:100%;
-padding:14px;
-border:none;
-border-radius:10px;
-font-weight:bold;
-cursor:pointer;
-}
-
-.btn-blue{
-background:#3b82f6;
-color:white;
-}
-
-.btn-green{
-background:#10b981;
-color:white;
-}
-
-.bottom-nav{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-background:#1e293b;
-display:flex;
-height:60px;
-}
-
-.nav-item{
-flex:1;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-color:#94a3b8;
-cursor:pointer;
-font-size:12px;
-}
-
-.nav-item.active{
-color:#3b82f6;
-}
-
-.report-item{
-background:white;
-padding:15px;
-border-radius:12px;
-margin-bottom:10px;
-display:flex;
-justify-content:space-between;
-}
-
-</style></head><body><div class="navbar">
-<b>DIAMOND MANAGER</b>
-</div><!-- APP --><div id="main-app" style="display:none"><div id="entry" class="container active"><h2>New Entry</h2><div class="main-card"><input id="barcode" placeholder="Packet Number"><input id="weight" placeholder="Weight"><input id="price" placeholder="Price"><input type="date" id="entryDate"><button class="btn btn-green" onclick="saveStone()">Save Stone</button>
-
-</div></div><div id="reports" class="container"><h2>Reports</h2><div id="historyList"></div></div><div class="bottom-nav"><div class="nav-item active" onclick="showTab('entry')">
-Entry
-</div><div class="nav-item" onclick="showTab('reports')">
-Reports
-</div></div></div><!-- LOGIN SCREEN --><div id="auth-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#1e293b"><div style="background:white;padding:30px;border-radius:20px;width:90%;max-width:350px"><h2 style="text-align:center">Diamond Manager</h2><input id="email" placeholder="Email"><input type="password" id="password" placeholder="Password"><button class="btn btn-blue" onclick="handleAuth()">Sign In</button>
-
-<button class="btn btn-green" style="margin-top:10px" onclick="signUp()">Create Account</button>
-
-<p style="text-align:center;margin-top:15px;color:#3b82f6;cursor:pointer" onclick="forgotPassword()">
-Forgot Password?
-</p></div></div><script>
-
-const firebaseConfig={
-apiKey:"AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo",
-authDomain:"daimond-calculator.firebaseapp.com",
-projectId:"daimond-calculator"
-};
-
-firebase.initializeApp(firebaseConfig);
-
-const auth=firebase.auth();
-const db=firebase.firestore();
-
-
-document.getElementById('entryDate').valueAsDate=new Date();
-
-
-async function handleAuth(){
-
-const email=document.getElementById("email").value;
-const password=document.getElementById("password").value;
-
-try{
-
-await auth.signInWithEmailAndPassword(email,password)
-
-}catch(err){
-
-alert(err.message)
-
-}
-
-}
-
-
-async function signUp(){
-
-const email=document.getElementById("email").value;
-const password=document.getElementById("password").value;
-
-if(!email||!password){
-
-alert("Enter email and password")
-
-return
-
-}
-
-try{
-
-await auth.createUserWithEmailAndPassword(email,password)
-
-alert("Account created")
-
-}catch(err){
-
-alert(err.message)
-
-}
-
-}
-
-
-
-async function forgotPassword(){
-
-const email=document.getElementById("email").value
-
-if(!email){
-
-alert("Enter email first")
-
-return
-
-}
-
-try{
-
-await auth.sendPasswordResetEmail(email)
-
-alert("Password reset email sent")
-
-}catch(err){
-
-alert(err.message)
-
-}
-
-}
-
-
-
-auth.onAuthStateChanged(user=>{
-
-if(user){
-
-document.getElementById("auth-screen").style.display="none"
-
-document.getElementById("main-app").style.display="block"
-
-loadReports()
-
-}else{
-
-document.getElementById("auth-screen").style.display="flex"
-
-document.getElementById("main-app").style.display="none"
-
-}
-
-})
-
-
-
-async function saveStone(){
-
-const stone={
-
-barcode:document.getElementById("barcode").value,
-
-weight:parseFloat(document.getElementById("weight").value),
-
-price:parseFloat(document.getElementById("price").value),
-
-date:document.getElementById("entryDate").value
-
-}
-
-await db.collection("stones").add(stone)
-
-loadReports()
-
-}
-
-
-
-async function loadReports(){
-
-const snap=await db.collection("stones").get()
-
-let html=""
-
-snap.forEach(doc=>{
-
-const s=doc.data()
-
-html+=`<div class="report-item">
-
-<div>
-
-<b>${s.barcode}</b><br>
-
-${s.weight} ct @ ₹${s.price}
-
+<!DOCTYPE html>  <html lang="en">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>Diamond Manager</title>  <link rel="manifest" href="manifest.json">  
+<meta name="theme-color" content="#0f172a">  
+<meta name="apple-mobile-web-app-capable" content="yes">  
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">  
+<link rel="apple-touch-icon" href="icon.png">  
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>  
+<style>  
+    :root {   
+        --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --label: #64748b;  
+        --header-bg: #1e293b; --header-text: #ffffff;  
+        --input-bg: #ffffff; --input-border: #cbd5e1;  
+        --accent: #3b82f6; --success: #10b981; --danger: #ef4444;  
+        --card-inner: #f8fafc;  
+    }  
+    [data-theme="dark"] {  
+        --bg: #020617; --card: #111827; --text: #f1f5f9; --label: #94a3b8;  
+        --header-bg: #0f172a; --header-text: #f8fafc;  
+        --input-bg: #1f2937; --input-border: #374151;  
+        --card-inner: #1f2937;  
+    }  
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; transition: background 0.3s; }  
+    body { background: var(--bg); color: var(--text); padding-bottom: 70px; }  
+
+    .navbar { display: flex; background: var(--header-bg); color: var(--header-text); justify-content: space-between; align-items: center; padding: 0 20px; height: 60px; position: sticky; top: 0; z-index: 1000; }  
+    .container { max-width: 500px; margin: 0 auto; padding: 20px; display: none; }  
+    .container.active { display: block; }  
+    h2 { font-size: 24px; margin-bottom: 20px; font-weight: 700; }  
+    .main-card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }  
+    .section-label { font-size: 11px; color: #fbbf24; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; display: block; }  
+    .input-label { font-size: 10px; color: var(--label); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; display: block; }  
+    input, select { width: 100%; padding: 14px; border: 1px solid var(--input-border); border-radius: 10px; margin-bottom: 20px; font-size: 16px; background: var(--input-bg); color: var(--text); outline: none; }  
+    .segment-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }  
+    .segment-btn { padding: 10px 18px; border-radius: 20px; border: none; background: var(--card-inner); color: var(--label); font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }  
+    .segment-btn.active { background: var(--accent); color: white; }  
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--header-bg); display: flex; height: 65px; border-top: 1px solid rgba(255,255,255,0.1); z-index: 1000; }  
+    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--label); cursor: pointer; font-size: 10px; gap: 4px; }  
+    .nav-item.active { color: var(--accent); }  
+    .nav-icon { font-size: 18px; }  
+    .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }  
+    .btn-green { background: var(--success); color: white; }  
+    .btn-blue { background: var(--accent); color: white; }  
+    .report-item { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }  
+    .report-info b { font-size: 16px; display: block; margin-bottom: 2px; }  
+    .report-info small { color: var(--label); font-size: 12px; }  
+    .val-text { font-size: 18px; font-weight: 700; text-align: right; }  
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 20px; text-align: center; }  
+    .summary-grid h3 { font-size: 20px; margin-bottom: 4px; }  
+    .summary-grid small { color: var(--label); font-size: 11px; text-transform: uppercase; font-weight: 700; }  
+    .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: var(--card); z-index: 2000; transition: 0.3s; padding: 25px; }  
+    .side-menu.open { right: 0; }  
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1500; }  
+    .overlay.active { display: block; }  
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; align-items: center; justify-content: center; padding: 20px; }  
+    .modal-overlay.active { display: flex; }  
+    .modal-card { background: var(--card); width: 100%; max-width: 400px; padding: 25px; border-radius: 20px; }  
+</style>
+
+</head>  
+<body>  <div class="overlay" id="overlay" onclick="toggleMenu()"></div>  
+<div class="side-menu" id="side-menu">  
+    <h3 style="margin-bottom:25px">Settings</h3>  
+    <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="toggleTheme()">🌓 Toggle Theme</button>  
+    <button class="btn" style="background: var(--danger); color: white; margin-top: 40px;" onclick="auth.signOut()">Logout</button>  
+</div>  <div class="navbar">  
+    <b style="letter-spacing: 1px;">DIAMOND MANAGER</b>  
+    <div onclick="toggleMenu()" style="cursor:pointer; font-size:24px;">☰</div>  
+</div>  <div class="modal-overlay" id="editModal">  
+    <div class="modal-card">  
+        <h3 style="margin-bottom:20px; color: var(--accent);">Edit Record</h3>  
+        <input type="hidden" id="edit-id">  
+        <label class="input-label">Date</label><input type="date" id="edit-date">  
+        <label class="input-label">Packet ID</label><input type="text" id="edit-barcode">  
+        <label class="input-label">Weight (ct)</label><input type="number" id="edit-weight" step="0.01">  
+        <label class="input-label">Rate (₹)</label><input type="number" id="edit-price">  
+        <button class="btn btn-green" onclick="updateStone()">Update Record</button>  
+        <button class="btn" style="background:none; color:var(--label); margin-top:10px" onclick="closeModal()">Cancel</button>  
+    </div>  
+</div>  <div id="main-app" style="display:none;">  
+    <div id="entry" class="container active">  
+        <h2>New Entry</h2>  
+        <div class="main-card">  
+            <label class="input-label">Packet Number</label>  
+            <input type="text" id="barcode" placeholder="# Barcode / Packet no.">  
+            <span class="section-label">Shape</span>  
+            <div class="segment-container" id="shape-segments">  
+                <button class="segment-btn active" onclick="setSegment('shape', 'Oval')">Oval</button>  
+                <button class="segment-btn" onclick="setSegment('shape', 'Marquise')">Marquise</button>  
+                <button class="segment-btn" onclick="setSegment('shape', 'Pear')">Pear</button>  
+                <button class="segment-btn" onclick="setSegment('shape', 'Round')">Round</button>  
+                <button class="segment-btn" onclick="setSegment('shape', 'Radiant')">Radiant</button>  
+                <button class="segment-btn" onclick="setSegment('shape', 'Emerald')">Emerald</button>  
+                <button class="segment-btn" onclick="setSegment('shape', 'Cushion')">Cushion</button>  
+            </div>  
+            <span class="section-label">Cut</span>  
+            <div class="segment-container" id="cut-segments">  
+                <button class="segment-btn active" onclick="setSegment('cut', 'Ex')">Ex</button>  
+                <button class="segment-btn" onclick="setSegment('cut', 'VG')">VG</button>  
+            </div>  
+            <div style="display:flex; gap:15px;">  
+                <div style="flex:1;"><label class="input-label">Weight (ct)</label><input type="number" id="weight" step="0.01" placeholder="0.00" oninput="lookupPrice()"></div>  
+                <div style="flex:1;"><label class="input-label">Rate / ct</label><input type="number" id="price" placeholder="₹ 0"></div>  
+            </div>  
+            <input type="date" id="entryDate" style="margin-top:-10px">  
+            <button class="btn btn-green" onclick="saveStone()">✓ Save Stone</button>  
+        </div>  
+    </div>  <div id="prices" class="container">  
+    <h2>Price Rules</h2>  
+    <div class="main-card">  
+        <span class="section-label">Add New Rate</span>  
+        <label class="input-label">Department</label>  
+        <div class="segment-container" id="grp-segments" style="margin-bottom:15px">  
+            <button class="segment-btn active" onclick="setSegment('grp', 'Fancy')">Fancy (Pear, MQ, Oval)</button>  
+            <button class="segment-btn" onclick="setSegment('grp', 'Step')">Step / Other</button>  
+        </div>  
+        <label class="input-label">Cut</label>  
+        <div class="segment-container" id="pcut-segments"><button class="segment-btn active" onclick="setSegment('pcut', 'Ex')">Ex</button><button class="segment-btn" onclick="setSegment('pcut', 'VG')">VG</button></div>  
+        <label class="input-label">Weight Range (ct)</label>  
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px"><input type="number" id="p_min" placeholder="Min" style="margin:0"><span style="color:var(--label)">—</span><input type="number" id="p_max" placeholder="Max" style="margin:0"></div>  
+        <label class="input-label">Price per ct (₹)</label><input type="number" id="p_amt" placeholder="₹ 0">  
+        <button class="btn btn-blue" onclick="savePriceRule()">+ Save Rate</button>  
+    </div>  
+    <div id="priceList"></div>  
+</div>  
+
+<div id="reports" class="container">  
+    <h2>Reports</h2>  
+    <div class="summary-grid">  
+        <div><h3 id="totCount" style="color:var(--accent)">0</h3><small>Stones</small></div>  
+        <div><h3 id="totWt">0.00</h3><small>Total ct</small></div>  
+        <div><h3 id="totVal" style="color:var(--success)">₹0</h3><small>Value</small></div>  
+    </div>  
+    <input type="month" id="filterMonth" onchange="loadReports()" style="border-radius:30px; padding:10px 20px">  
+    <div id="historyList"></div>  
+</div>  
+
+<div class="bottom-nav">  
+    <div class="nav-item active" onclick="showTab('entry')"><span class="nav-icon">⊕</span><span>Entry</span></div>  
+    <div class="nav-item" onclick="showTab('prices')"><span class="nav-icon">🏷</span><span>Prices</span></div>  
+    <div class="nav-item" onclick="showTab('reports')"><span class="nav-icon">📊</span><span>Reports</span></div>  
 </div>
 
-<div>
-
-₹${s.weight*s.price}
-
-</div>
-
-</div>`
-
-})
-
-document.getElementById("historyList").innerHTML=html
-
-}
-
-
-
-function showTab(id){
-
-document.querySelectorAll(".container").forEach(el=>el.classList.remove("active"))
-
-document.querySelectorAll(".nav-item").forEach(el=>el.classList.remove("active"))
-
-document.getElementById(id).classList.add("active")
-
-}
-
-</script></body>
-</html>
+</div>  <div id="auth-screen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:var(--header-bg)">  
+    <div style="background: var(--card); padding: 30px; border-radius: 20px; width: 90%; max-width: 350px;">  
+        <h2 style="text-align:center">Diamond Manager</h2>  
+        <input type="email" id="email" placeholder="Email">  
+        <input type="password" id="password" placeholder="Password">  
+        <button class="btn btn-blue" onclick="handleAuth()">Sign In</button>  
+    </div>  
+</div>  <script>  
+// PWA Registration  
+if ('serviceWorker' in navigator) {  
+  navigator.serviceWorker.register('sw.js').then(() => console.log("PWA Ready"));  
+}  
+  
+const firebaseConfig = { apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo", authDomain: "daimond-calculator.firebaseapp.com", projectId: "daimond-calculator", storageBucket: "daimond-calculator.firebasestorage.app", messagingSenderId: "1076337600089", appId: "1:1076337600089:web:dce0e8433eb4551c563348" };  
+firebase.initializeApp(firebaseConfig);  
+const auth = firebase.auth(), db = firebase.firestore();  
+  
+let selectedValues = { shape: 'Oval', cut: 'Ex', grp: 'Fancy', pcut: 'Ex' };  
+let userPrices = [];  
+  
+document.getElementById('entryDate').valueAsDate = new Date();  
+if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');  
+  
+function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }  
+function toggleTheme() {   
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';  
+    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');  
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');  
+}  
+  
+function setSegment(key, val) {  
+    selectedValues[key] = val;  
+    const containerId = key === 'grp' ? 'grp-segments' : (key === 'pcut' ? 'pcut-segments' : (key === 'shape' ? 'shape-segments' : 'cut-segments'));  
+    document.querySelectorAll(`#${containerId} .segment-btn`).forEach(btn => { btn.classList.toggle('active', btn.innerText.includes(val)); });  
+    if(key === 'shape' || key === 'cut') lookupPrice();  
+}  
+  
+async function handleAuth() {  
+    const e = document.getElementById('email').value, p = document.getElementById('password').value;  
+    try { await auth.signInWithEmailAndPassword(e, p); } catch(err) { alert(err.message); }  
+}  
+  
+auth.onAuthStateChanged(u => {  
+    document.getElementById('auth-screen').style.display = u ? 'none' : 'flex';  
+    document.getElementById('main-app').style.display = u ? 'block' : 'none';  
+    if(u) { document.getElementById('filterMonth').value = new Date().toISOString().slice(0,7); loadPrices(); loadReports(); }  
+});  
+  
+function lookupPrice() {  
+    const shp = selectedValues.shape, cut = selectedValues.cut, wt = parseFloat(document.getElementById('weight').value) || 0;  
+    const grp = ["Oval", "Marquise", "Pear"].includes(shp) ? "Fancy" : "Step";  
+    const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);  
+    if(match) document.getElementById('price').value = match.amt;  
+}  
+  
+async function saveStone() {  
+    const s = { date: document.getElementById('entryDate').value, barcode: document.getElementById('barcode').value || "No ID", shape: selectedValues.shape, cut: selectedValues.cut, weight: parseFloat(document.getElementById('weight').value), price: parseFloat(document.getElementById('price').value), month: document.getElementById('entryDate').value.slice(0,7) };  
+    if(isNaN(s.weight) || isNaN(s.price)) return alert("Check values");  
+    await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(s);  
+    document.getElementById('barcode').value = ''; document.getElementById('weight').value = '';  
+    loadReports(); alert("Saved!");  
+}  
+  
+async function savePriceRule() {  
+    const r = { grp: selectedValues.grp, cut: selectedValues.pcut, min: parseFloat(document.getElementById('p_min').value), max: parseFloat(document.getElementById('p_max').value), amt: parseFloat(document.getElementById('p_amt').value) };  
+    await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(r);  
+    loadPrices();  
+}  
+  
+async function loadPrices() {  
+    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();  
+    userPrices = []; let h = '';  
+    snap.forEach(doc => {   
+        const r = doc.data(); userPrices.push(r);   
+        h += `<div class="report-item"><div class="report-info"><b>${r.grp} (${r.cut})</b><small>${r.min}-${r.max}ct</small></div><div style="display:flex; align-items:center; gap:15px"><b class="val-text">₹${r.amt}</b><span onclick="del('prices','${doc.id}',loadPrices)" style="color:var(--danger); cursor:pointer">✕</span></div></div>`;   
+    });  
+    document.getElementById('priceList').innerHTML = h;  
+}  
+  
+async function loadReports() {  
+    const m = document.getElementById('filterMonth').value;  
+    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones").where("month", "==", m).get();  
+    let h = '', tC = 0, tW = 0, tV = 0;  
+    snap.forEach(doc => {   
+        const s = doc.data(); tC++; tW += s.weight; tV += (s.weight * s.price);   
+        h += `<div class="report-item"><div class="report-info"><b>${s.barcode}</b><small>${s.shape} • ${s.cut} • ${s.weight}ct @ ₹${s.price}</small></div><div style="text-align:right"><div class="val-text" style="color:var(--success)">₹${Math.round(s.weight * s.price).toLocaleString()}</div><span onclick="openEditModal('${doc.id}','${s.date}','${s.barcode}',${s.weight},${s.price})" style="color:var(--accent); font-size:11px; cursor:pointer">EDIT</span><span onclick="del('stones','${doc.id}',loadReports)" style="color:var(--danger); margin-left:10px; font-size:11px; cursor:pointer">DELETE</span></div></div>`;   
+    });  
+    document.getElementById('totCount').innerText = tC; document.getElementById('totWt').innerText = tW.toFixed(2); document.getElementById('totVal').innerText = "₹" + Math.round(tV).toLocaleString();  
+    document.getElementById('historyList').innerHTML = h;  
+}  
+  
+function openEditModal(id, date, barcode, weight, price) { document.getElementById('edit-id').value = id; document.getElementById('edit-date').value = date; document.getElementById('edit-barcode').value = barcode; document.getElementById('edit-weight').value = weight; document.getElementById('edit-price').value = price; document.getElementById('editModal').classList.add('active'); }  
+function closeModal() { document.getElementById('editModal').classList.remove('active'); }  
+async function updateStone() { const id = document.getElementById('edit-id').value; const data = { date: document.getElementById('edit-date').value, barcode: document.getElementById('edit-barcode').value, weight: parseFloat(document.getElementById('edit-weight').value), price: parseFloat(document.getElementById('edit-price').value), month: document.getElementById('edit-date').value.slice(0,7) }; await db.collection("users").doc(auth.currentUser.uid).collection("stones").doc(id).update(data); closeModal(); loadReports(); }  
+async function del(c, id, cb) { if(confirm("Delete?")) { await db.collection("users").doc(auth.currentUser.uid).collection(c).doc(id).delete(); cb(); } }  
+  
+function showTab(id) {  
+    document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));  
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));  
+    document.getElementById(id).classList.add('active');  
+    const index = id === 'entry' ? 0 : (id === 'prices' ? 1 : 2);  
+    document.querySelectorAll('.nav-item')[index].classList.add('active');  
+}  
+</script>  </body>  
+</html>  
+ What you have updated in code replace it in this app add a date option in report 
