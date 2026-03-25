@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diamond Manager</title>
+    <title>Diamond Calculator</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
@@ -76,7 +76,7 @@
 </div>
 
 <div class="navbar">
-    <b style="letter-spacing: 1px;">DIAMOND MANAGER</b>
+    <b style="letter-spacing: 1px;">DIAMOND CALCULATOR</b>
     <div onclick="toggleMenu()" style="cursor:pointer; font-size:24px;">☰</div>
 </div>
 
@@ -226,7 +226,7 @@ async function forgotPassword() {
     if(!e) return alert("Please enter your email first");
     try {
         await auth.sendPasswordResetEmail(e);
-        alert("Password reset link sent to your email!");
+        alert('Password reset link sent! Check inbox/spam folder (search "Diamond-calculator" or "firebase").');
     } catch(err) { alert(err.message); }
 }
 
