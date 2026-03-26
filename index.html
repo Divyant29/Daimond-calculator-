@@ -29,6 +29,23 @@
             --card-inner: #1f2937;
         }
 
+        /* NEW LOGIN STYLES */
+        #auth-screen {
+            background: radial-gradient(circle at center, #134e4a 0%, #042f2e 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; text-align: center; color: white;
+        }
+        .login-logo { width: 100px; height: 100px; border: 2px solid #5eead4; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); margin-bottom: 20px; }
+        .login-title { font-size: 36px; letter-spacing: 6px; font-weight: 800; margin: 10px 0 0 0; }
+        .login-subtitle { font-size: 14px; letter-spacing: 4px; color: #5eead4; text-transform: uppercase; margin-bottom: 15px; }
+        .login-gujarati { font-size: 16px; color: #94a3b8; margin-bottom: 40px; }
+        .google-btn { 
+            width: 85%; max-width: 320px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); 
+            border-radius: 40px; padding: 14px; color: white; font-size: 18px; font-weight: 600; 
+            display: flex; align-items: center; justify-content: center; gap: 15px; cursor: pointer;
+        }
+        .g-icon-circle { background: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; transition: background 0.3s; }
         body { background: var(--bg); color: var(--text); padding-bottom: 70px; }
 
@@ -80,22 +97,22 @@
     <div onclick="toggleMenu()" style="cursor:pointer; font-size:24px;">☰</div>
 </div>
 
-<div id="auth-screen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:var(--header-bg)">
-    <div style="background: var(--card); padding: 30px; border-radius: 20px; width: 90%; max-width: 350px;">
-        <h2 id="auth-title" style="text-align:center">Sign In</h2>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <button class="btn btn-blue" id="main-auth-btn" onclick="handleAuth()">Sign In</button>
-        
-        <div style="text-align: center; margin-top: 15px;">
-            <p id="toggle-text" style="font-size: 13px; color: var(--label); cursor: pointer;" onclick="toggleAuthMode()">
-                New user? Create account
-            </p>
-            <p style="font-size: 13px; color: var(--accent); cursor: pointer; margin-top: 10px;" onclick="forgotPassword()">
-                Forgot Password?
-            </p>
-        </div>
+<div id="auth-screen">
+    <div class="login-logo">
+        <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#5eead4" stroke-width="1.5">
+            <path d="M6 3h12l4 6-10 12L2 9l4-6zM11 3v18M6 3l5 6m7-6l-5 6m-9 0h20" />
+        </svg>
     </div>
+    <h1 class="login-title">DIAMOND</h1>
+    <p class="login-subtitle">CALCULATOR</p>
+    <p class="login-gujarati">તમારા દૈનિક કામની નોંધ કરો</p>
+
+    <button class="google-btn" onclick="signInWithGoogle()">
+        <div class="g-icon-circle">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="18">
+        </div>
+        Google Login
+    </button>
 </div>
 
 <div class="modal-overlay" id="editModal">
@@ -179,10 +196,7 @@
 </div>
 
 <script>
-// PWA Registration
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(() => console.log("PWA Ready"));
-}
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
 const firebaseConfig = { apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo", authDomain: "daimond-calculator.firebaseapp.com", projectId: "daimond-calculator", storageBucket: "daimond-calculator.firebasestorage.app", messagingSenderId: "1076337600089", appId: "1:1076337600089:web:dce0e8433eb4551c563348" };
 firebase.initializeApp(firebaseConfig);
@@ -190,7 +204,6 @@ const auth = firebase.auth(), db = firebase.firestore();
 
 let selectedValues = { shape: 'Oval', cut: 'Ex', grp: 'Fancy', pcut: 'Ex' };
 let userPrices = [];
-let isSignUp = false;
 
 document.getElementById('entryDate').valueAsDate = new Date();
 if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -202,32 +215,10 @@ function toggleTheme() {
     localStorage.setItem('theme', isDark ? 'light' : 'dark');
 }
 
-function toggleAuthMode() {
-    isSignUp = !isSignUp;
-    document.getElementById('auth-title').innerText = isSignUp ? "Create Account" : "Sign In";
-    document.getElementById('main-auth-btn').innerText = isSignUp ? "Sign Up" : "Sign In";
-    document.getElementById('toggle-text').innerText = isSignUp ? "Already have account? Sign In" : "New user? Create account";
-}
-
-async function handleAuth() {
-    const e = document.getElementById('email').value, p = document.getElementById('password').value;
-    if(!e || !p) return alert("Fill all fields");
-    try { 
-        if(isSignUp) {
-            await auth.createUserWithEmailAndPassword(e, p);
-        } else {
-            await auth.signInWithEmailAndPassword(e, p); 
-        }
-    } catch(err) { alert(err.message); }
-}
-
-async function forgotPassword() {
-    const e = document.getElementById('email').value;
-    if(!e) return alert("Please enter your email first");
-    try {
-        await auth.sendPasswordResetEmail(e);
-        alert('Password reset link sent! Check inbox/spam folder (search "Diamond-calculator" or "firebase").');
-    } catch(err) { alert(err.message); }
+// NEW SIGN IN METHOD
+async function signInWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try { await auth.signInWithPopup(provider); } catch(e) { alert(e.message); }
 }
 
 auth.onAuthStateChanged(u => {
@@ -280,7 +271,6 @@ async function loadReports() {
     let h = '', tC = 0, tW = 0, tV = 0;
     snap.forEach(doc => { 
         const s = doc.data(); tC++; tW += s.weight; tV += (s.weight * s.price); 
-        // Fixed: Added Date and used exact calculation (removed Math.round)
         h += `<div class="report-item"><div class="report-info"><b>${s.barcode}</b><small>${s.date} • ${s.shape} • ${s.cut} • ${s.weight}ct @ ₹${s.price}</small></div><div style="text-align:right"><div class="val-text" style="color:var(--success)">₹${(s.weight * s.price).toLocaleString(undefined, {minimumFractionDigits: 1})}</div><span onclick="openEditModal('${doc.id}','${s.date}','${s.barcode}',${s.weight},${s.price})" style="color:var(--accent); font-size:11px; cursor:pointer">EDIT</span><span onclick="del('stones','${doc.id}',loadReports)" style="color:var(--danger); margin-left:10px; font-size:11px; cursor:pointer">DELETE</span></div></div>`; 
     });
     document.getElementById('totCount').innerText = tC; document.getElementById('totWt').innerText = tW.toFixed(2); document.getElementById('totVal').innerText = "₹" + tV.toLocaleString(undefined, {minimumFractionDigits: 1});
