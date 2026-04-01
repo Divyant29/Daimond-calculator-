@@ -29,6 +29,9 @@
             --card-inner: #1f2937;
         }
 
+        /* FIX FLICKER: Hide screens by default */
+        #auth-screen, #main-app { display: none; }
+
         /* --- LOGIN PAGE DESIGN --- */
         #auth-screen {
             background-color: #64748b; 
@@ -139,7 +142,7 @@
     </div>
 </div>
 
-<div id="main-app" style="display:none;">
+<div id="main-app">
     <div id="entry" class="container active">
         <h2>New Entry</h2>
         <div class="main-card">
@@ -195,7 +198,16 @@
             <div><h3 id="totWt">0.00</h3><small>Total ct</small></div>
             <div><h3 id="totVal" style="color:var(--success)">₹0</h3><small>Value</small></div>
         </div>
-        <input type="month" id="filterMonth" onchange="loadReports()" style="border-radius:30px; padding:10px 20px">
+        
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <input type="month" id="filterMonth" onchange="loadReports()" style="flex:2; border-radius:30px; padding:10px 20px; margin-bottom:0;">
+            <select id="sortOption" onchange="loadReports()" style="flex:1; border-radius:30px; padding:10px; margin-bottom:0; font-size: 14px;">
+                <option value="date">Date</option>
+                <option value="weight">Weight</option>
+                <option value="val">Value</option>
+            </select>
+        </div>
+
         <div id="historyList"></div>
     </div>
 
@@ -247,6 +259,7 @@ async function signInWithGoogle() {
 }
 
 auth.onAuthStateChanged(u => {
+    // FIX FLICKER: Set display based on auth status
     document.getElementById('auth-screen').style.display = u ? 'none' : 'flex';
     document.getElementById('main-app').style.display = u ? 'block' : 'none';
     if(u) { document.getElementById('filterMonth').value = new Date().toISOString().slice(0,7); loadPrices(); loadReports(); }
@@ -292,13 +305,32 @@ async function loadPrices() {
 
 async function loadReports() {
     const m = document.getElementById('filterMonth').value;
+    const sortVal = document.getElementById('sortOption').value;
     const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones").where("month", "==", m).get();
-    let h = '', tC = 0, tW = 0, tV = 0;
+    
+    let stones = [];
     snap.forEach(doc => { 
-        const s = doc.data(); tC++; tW += s.weight; tV += (s.weight * s.price); 
-        h += `<div class="report-item"><div class="report-info"><b>${s.barcode}</b><small>${s.date} • ${s.shape} • ${s.cut} • ${s.weight}ct @ ₹${s.price}</small></div><div style="text-align:right"><div class="val-text" style="color:var(--success)">₹${(s.weight * s.price).toLocaleString(undefined, {minimumFractionDigits: 1})}</div><span onclick="openEditModal('${doc.id}','${s.date}','${s.barcode}',${s.weight},${s.price})" style="color:var(--accent); font-size:11px; cursor:pointer">EDIT</span><span onclick="del('stones','${doc.id}',loadReports)" style="color:var(--danger); margin-left:10px; font-size:11px; cursor:pointer">DELETE</span></div></div>`; 
+        let s = doc.data(); 
+        s.id = doc.id; 
+        s.totalVal = s.weight * s.price;
+        stones.push(s); 
     });
-    document.getElementById('totCount').innerText = tC; document.getElementById('totWt').innerText = tW.toFixed(2); document.getElementById('totVal').innerText = "₹" + tV.toLocaleString(undefined, {minimumFractionDigits: 1});
+    // Sorting Logic
+    stones.sort((a, b) => {
+        if (sortVal === 'date') return new Date(b.date) - new Date(a.date);
+        if (sortVal === 'weight') return b.weight - a.weight;
+        if (sortVal === 'val') return b.totalVal - a.totalVal;
+        return 0;
+    });
+
+    let h = '', tC = 0, tW = 0, tV = 0;
+    stones.forEach(s => { 
+        tC++; tW += s.weight; tV += s.totalVal; 
+        h += `<div class="report-item"><div class="report-info"><b>${s.barcode}</b><small>${s.date} • ${s.shape} • ${s.cut} • ${s.weight}ct @ ₹${s.price}</small></div><div style="text-align:right"><div class="val-text" style="color:var(--success)">₹${s.totalVal.toLocaleString(undefined, {minimumFractionDigits: 1})}</div><span onclick="openEditModal('${s.id}','${s.date}','${s.barcode}',${s.weight},${s.price})" style="color:var(--accent); font-size:11px; cursor:pointer">EDIT</span><span onclick="del('stones','${s.id}',loadReports)" style="color:var(--danger); margin-left:10px; font-size:11px; cursor:pointer">DELETE</span></div></div>`; 
+    });
+    document.getElementById('totCount').innerText = tC; 
+    document.getElementById('totWt').innerText = tW.toFixed(2); 
+    document.getElementById('totVal').innerText = "₹" + tV.toLocaleString(undefined, {minimumFractionDigits: 1});
     document.getElementById('historyList').innerHTML = h;
 }
 
