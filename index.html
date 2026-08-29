@@ -4,16 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diamond Calculator</title>
-    
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon.png">
 
+    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Barcode Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
     <style>
         :root { 
             --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --label: #64748b;
@@ -29,7 +33,7 @@
             --card-inner: #1f2937;
         }
 
-        /* FIX FLICKER: Hide screens by default */
+        /* Hide screens by default to prevent auth flicker */
         #auth-screen, #main-app { display: none; }
 
         /* --- LOGIN PAGE DESIGN --- */
@@ -68,7 +72,7 @@
         .input-label { font-size: 10px; color: var(--label); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; display: block; }
         input, select { width: 100%; padding: 14px; border: 1px solid var(--input-border); border-radius: 10px; margin-bottom: 20px; font-size: 16px; background: var(--input-bg); color: var(--text); outline: none; }
         .segment-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-        .segment-btn { padding: 10px 18px; border-radius: 20px; border: none; background: var(--card-inner); color: var(--label); font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .segment-btn { padding: 10px 18px; border-radius: 20px; border: none; background: var(--card-inner); color: var(--label); font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
         .segment-btn.active { background: var(--accent); color: white; }
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--header-bg); display: flex; height: 65px; border-top: 1px solid rgba(255,255,255,0.1); z-index: 1000; }
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--label); cursor: pointer; font-size: 10px; gap: 4px; }
@@ -90,262 +94,665 @@
         .overlay.active { display: block; }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; align-items: center; justify-content: center; padding: 20px; }
         .modal-overlay.active { display: flex; }
-        .modal-card { background: var(--card); width: 100%; max-width: 400px; padding: 25px; border-radius: 20px; }
+        .modal-card { background: var(--card); width: 100%; max-width: 400px; padding: 25px; border-radius: 20px; max-height: 90vh; overflow-y: auto; }
+
+        /* Scanner Modal UI */
+        #scanner-reader { width: 100%; background: #000; border-radius: 12px; overflow: hidden; }
+        .input-group { display: flex; gap: 8px; margin-bottom: 20px; }
+        .input-group input { margin-bottom: 0; flex: 1; }
+        .scan-btn-inline { padding: 0 16px; border-radius: 10px; border: 1px solid var(--input-border); background: var(--card-inner); color: var(--text); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+        
+        .delete-shape-btn { margin-left: 4px; color: var(--danger); font-size: 11px; cursor: pointer; border: none; background: none; }
+        .shape-list-item { display: flex; justify-content: space-between; align-items: center; background: var(--card-inner); padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; }
     </style>
 </head>
 <body>
-
-<div id="auth-screen">
-    <div class="login-circle">
-        <svg width="60" height="60" viewBox="0 0 24 24">
-            <path d="M12.01 21.49L2 11.43l3.05-6.13h13.92l3.03 6.13-10 10.06z" fill="#93c5fd"/>
-            <path d="M12 21.5l-10-10.07 3.05-6.13h6.95V21.5z" fill="#60a5fa"/>
-            <path d="M18.97 5.3H5.05L2 11.43h20l-3.03-6.13z" fill="#bfdbfe"/>
-            <path d="M12 5.3h6.97l3.03 6.13H12V5.3z" fill="#dbeafe"/>
-        </svg>
-    </div>
-    <h1 class="login-title">DIAMOND</h1>
-    <p class="login-subtitle">Calculator</p>
-    <p class="login-gujarati">તમારા દૈનિક કામની નોંધ કરો</p>
-
-    <button class="google-btn" onclick="signInWithGoogle()">
-        <div class="g-icon-wrapper">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="18">
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen">
+        <div class="login-circle">
+            <svg width="60" height="60" viewBox="0 0 24 24">
+                <path d="M12.01 21.49L2 11.43l3.05-6.13h13.92l3.03 6.13-10 10.06z" fill="#93c5fd"/>
+                <path d="M12 21.5l-10-10.07 3.05-6.13h6.95V21.5z" fill="#60a5fa"/>
+                <path d="M18.97 5.3H5.05L2 11.43h20l-3.03-6.13z" fill="#bfdbfe"/>
+                <path d="M12 5.3h6.97l3.03 6.13H12V5.3z" fill="#dbeafe"/>
+            </svg>
         </div>
-        Google Login
-    </button>
-</div>
-
-<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
-<div class="side-menu" id="side-menu">
-    <h3 style="margin-bottom:25px">Settings</h3>
-    <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="toggleTheme()">🌓 Toggle Theme</button>
-    <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="updateApp()">🔄 Check for Update</button>
-    <button class="btn" style="background: var(--danger); color: white; margin-top: 40px;" onclick="auth.signOut()">Logout</button>
-</div>
-
-<div class="navbar">
-    <b style="letter-spacing: 1px;">DIAMOND CALCULATOR </b>
-    <div onclick="toggleMenu()" style="cursor:pointer; font-size:24px;">☰</div>
-</div>
-
-<div class="modal-overlay" id="editModal">
-    <div class="modal-card">
-        <h3 style="margin-bottom:20px; color: var(--accent);">Edit Record</h3>
-        <input type="hidden" id="edit-id">
-        <label class="input-label">Date</label><input type="date" id="edit-date">
-        <label class="input-label">Packet ID</label><input type="text" id="edit-barcode">
-        <label class="input-label">Weight (ct)</label><input type="number" id="edit-weight" step="0.01">
-        <label class="input-label">Rate (₹)</label><input type="number" id="edit-price">
-        <button class="btn btn-green" onclick="updateStone()">Update Record</button>
-        <button class="btn" style="background:none; color:var(--label); margin-top:10px" onclick="closeModal()">Cancel</button>
-    </div>
-</div>
-
-<div id="main-app">
-    <div id="entry" class="container active">
-        <h2>New Entry</h2>
-        <div class="main-card">
-            <label class="input-label">Packet Number</label>
-            <input type="text" id="barcode" placeholder="# Barcode / Packet no.">
-            <span class="section-label">Shape</span>
-            <div class="segment-container" id="shape-segments">
-                <button class="segment-btn active" onclick="setSegment('shape', 'Oval')">Oval</button>
-                <button class="segment-btn" onclick="setSegment('shape', 'Marquise')">Marquise</button>
-                <button class="segment-btn" onclick="setSegment('shape', 'Pear')">Pear</button>
-                <button class="segment-btn" onclick="setSegment('shape', 'Round')">Round</button>
-                <button class="segment-btn" onclick="setSegment('shape', 'Radiant')">Radiant</button>
-                <button class="segment-btn" onclick="setSegment('shape', 'Emerald')">Emerald</button>
-                <button class="segment-btn" onclick="setSegment('shape', 'Cushion')">Cushion</button>
-                <button class="segment-btn" onclick="setSegment('shape', 'Hexa')">Hexa</button>
+        <h1 class="login-title">DIAMOND</h1>
+        <p class="login-subtitle">Calculator</p>
+        <p class="login-gujarati">તમારા દૈનિક કામની નોંધ કરો</p>
+        <button class="google-btn" onclick="signInWithGoogle()">
+            <div class="g-icon-wrapper">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="18" alt="Google Logo">
             </div>
-            <span class="section-label">Cut</span>
-            <div class="segment-container" id="cut-segments">
-                <button class="segment-btn active" onclick="setSegment('cut', 'Ex')">Ex</button>
-                <button class="segment-btn" onclick="setSegment('cut', 'VG')">VG</button>
+            Google Login
+        </button>
+    </div>
+
+    <!-- OVERLAY & SIDE MENU -->
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+    <div class="side-menu" id="side-menu">
+        <h3 style="margin-bottom:25px">Settings</h3>
+        <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="toggleTheme()">🌓 Toggle Theme</button>
+        <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openHelpModal()">🆘 Help & Support</button>
+        <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openFounderModal()">👤 Founder</button>
+        <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="updateApp()">🔄 Check for Update</button>
+        <button class="btn" style="background: var(--danger); color: white; margin-top: 40px;" onclick="auth.signOut()">🔴 Logout</button>
+    </div>
+
+    <!-- NAVBAR -->
+    <div class="navbar">
+        <b style="letter-spacing: 1px;">DIAMOND CALCULATOR</b>
+        <div onclick="toggleMenu()" style="cursor:pointer; font-size:24px;">☰</div>
+    </div>
+
+    <!-- EDIT RECORD MODAL -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-card">
+            <h3 style="margin-bottom:20px; color: var(--accent);">Edit Record</h3>
+            <input type="hidden" id="edit-id">
+            <label class="input-label" for="edit-date">Date</label>
+            <input type="date" id="edit-date">
+            <label class="input-label" for="edit-barcode">Packet ID</label>
+            <input type="text" id="edit-barcode">
+            <label class="input-label" for="edit-weight">Weight (ct)</label>
+            <input type="number" id="edit-weight" step="0.01" min="0.01">
+            <label class="input-label" for="edit-price">Rate (₹)</label>
+            <input type="number" id="edit-price" min="0">
+            <button class="btn btn-green" onclick="updateStone()">Update Record</button>
+            <button class="btn" style="background:none; color:var(--label); margin-top:10px" onclick="closeModal('editModal')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- BARCODE SCANNER MODAL -->
+    <div class="modal-overlay" id="scannerModal">
+        <div class="modal-card" style="text-align: center;">
+            <h3 style="margin-bottom:10px; color: var(--accent);">Scan Barcode</h3>
+            <p style="font-size:12px; color:var(--label); margin-bottom:15px;">Barcode ko camera ke box mein rakhein</p>
+            <div id="scanner-reader"></div>
+            <button class="btn" style="background:var(--danger); color:white; margin-top:15px" onclick="stopScanner()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- HELP & SUPPORT MODAL -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal-card" style="text-align: center;">
+            <h3 style="margin-bottom:15px; color: var(--accent);">🆘 Help & Support</h3>
+            <p style="font-size:14px; color:var(--text); line-height:1.5; margin-bottom:20px;">
+                Barcode scan, pricing, shape add karne ya app use karne mein problem ho to WhatsApp par contact karein.
+            </p>
+            <p style="font-size:16px; font-weight:700; margin-bottom:20px; color:var(--success);">📱 +91 8460393585</p>
+            <a href="https://wa.me/918460393585" target="_blank" style="text-decoration:none;">
+                <button class="btn btn-green">💬 WhatsApp Support</button>
+            </a>
+            <button class="btn" style="background:none; color:var(--label); margin-top:10px" onclick="closeModal('helpModal')">Close</button>
+        </div>
+    </div>
+
+    <!-- FOUNDER MODAL -->
+    <div class="modal-overlay" id="founderModal">
+        <div class="modal-card" style="text-align: center;">
+            <h3 style="margin-bottom:10px; color: var(--accent);">👤 Founder</h3>
+            <h2 style="margin-bottom:5px; color: var(--text);">Divyant Parmar</h2>
+            <p style="font-size:13px; color:var(--label); margin-bottom:20px;">Diamond Calculator / Diamond Manager</p>
+            <button class="btn" style="background:none; color:var(--label);" onclick="closeModal('founderModal')">Close</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP INTERFACE -->
+    <div id="main-app">
+        <!-- TAB 1: ENTRY -->
+        <div id="entry" class="container active">
+            <h2>New Entry</h2>
+            <div class="main-card">
+                <label class="input-label" for="barcode">Packet Number</label>
+                <div class="input-group">
+                    <input type="text" id="barcode" placeholder="# Barcode / Packet no.">
+                    <button class="scan-btn-inline" onclick="startScanner()" title="Scan Barcode">📷</button>
+                </div>
+
+                <span class="section-label">Shape</span>
+                <div class="segment-container" id="shape-segments"></div>
+
+                <span class="section-label">Cut</span>
+                <div class="segment-container" id="cut-segments">
+                    <button class="segment-btn active" onclick="setSegment('cut', 'Ex')">Ex</button>
+                    <button class="segment-btn" onclick="setSegment('cut', 'VG')">VG</button>
+                </div>
+
+                <div style="display:flex; gap:15px;">
+                    <div style="flex:1;">
+                        <label class="input-label" for="weight">Weight (ct)</label>
+                        <input type="number" id="weight" step="0.01" min="0.01" placeholder="0.00" oninput="lookupPrice()">
+                    </div>
+                    <div style="flex:1;">
+                        <label class="input-label" for="price">Rate / ct</label>
+                        <input type="number" id="price" min="0" placeholder="₹ 0">
+                    </div>
+                </div>
+                
+                <label class="input-label" for="entryDate">Date</label>
+                <input type="date" id="entryDate">
+                <button class="btn btn-green" onclick="saveStone()">✓ Save Stone</button>
             </div>
-            <div style="display:flex; gap:15px;">
-                <div style="flex:1;"><label class="input-label">Weight (ct)</label><input type="number" id="weight" step="0.01" placeholder="0.00" oninput="lookupPrice()"></div>
-                <div style="flex:1;"><label class="input-label">Rate / ct</label><input type="number" id="price" placeholder="₹ 0"></div>
+        </div>
+
+        <!-- TAB 2: PRICES & SHAPES -->
+        <div id="prices" class="container">
+            <h2>Price Rules</h2>
+            <div class="main-card">
+                <span class="section-label">Add New Rate</span>
+                <label class="input-label">Department</label>
+                <div class="segment-container" id="grp-segments" style="margin-bottom:15px">
+                    <button class="segment-btn active" onclick="setSegment('grp', 'Fancy')">Fancy (Pear, MQ, Oval)</button>
+                    <button class="segment-btn" onclick="setSegment('grp', 'Step')">Step / Other</button>
+                </div>
+                <label class="input-label">Cut</label>
+                <div class="segment-container" id="pcut-segments">
+                    <button class="segment-btn active" onclick="setSegment('pcut', 'Ex')">Ex</button>
+                    <button class="segment-btn" onclick="setSegment('pcut', 'VG')">VG</button>
+                </div>
+                <label class="input-label">Weight Range (ct)</label>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px">
+                    <input type="number" id="p_min" step="0.01" min="0" placeholder="Min" style="margin:0">
+                    <span style="color:var(--label)">—</span>
+                    <input type="number" id="p_max" step="0.01" min="0" placeholder="Max" style="margin:0">
+                </div>
+                <label class="input-label" for="p_amt">Price per ct (₹)</label>
+                <input type="number" id="p_amt" min="0" placeholder="₹ 0">
+                <button class="btn btn-blue" onclick="savePriceRule()">+ Save Rate</button>
             </div>
-            <input type="date" id="entryDate" style="margin-top:-10px">
-            <button class="btn btn-green" onclick="saveStone()">✓ Save Stone</button>
-        </div>
-    </div>
 
-    <div id="prices" class="container">
-        <h2>Price Rules</h2>
-        <div class="main-card">
-            <span class="section-label">Add New Rate</span>
-            <label class="input-label">Department</label>
-            <div class="segment-container" id="grp-segments" style="margin-bottom:15px">
-                <button class="segment-btn active" onclick="setSegment('grp', 'Fancy')">Fancy (Pear, MQ, Oval)</button>
-                <button class="segment-btn" onclick="setSegment('grp', 'Step')">Step / Other</button>
+            <div id="priceList" style="margin-bottom: 25px;"></div>
+
+            <!-- ADD CUSTOM SHAPE SECTION -->
+            <h2>Add Shape / Shale</h2>
+            <div class="main-card">
+                <span class="section-label">New Custom Shape</span>
+                <label class="input-label" for="custom_shape_name">Shape Name</label>
+                <input type="text" id="custom_shape_name" placeholder="e.g. Heart, Princess, Trillion">
+                
+                <label class="input-label">Department</label>
+                <div class="segment-container" id="cshape-grp-segments" style="margin-bottom:15px">
+                    <button class="segment-btn active" onclick="setSegment('cshape_grp', 'Fancy')">Fancy</button>
+                    <button class="segment-btn" onclick="setSegment('cshape_grp', 'Step')">Step / Other</button>
+                </div>
+
+                <button class="btn btn-blue" onclick="saveCustomShape()">+ Add Shape</button>
             </div>
-            <label class="input-label">Cut</label>
-            <div class="segment-container" id="pcut-segments"><button class="segment-btn active" onclick="setSegment('pcut', 'Ex')">Ex</button><button class="segment-btn" onclick="setSegment('pcut', 'VG')">VG</button></div>
-            <label class="input-label">Weight Range (ct)</label>
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px"><input type="number" id="p_min" placeholder="Min" style="margin:0"><span style="color:var(--label)">—</span><input type="number" id="p_max" placeholder="Max" style="margin:0"></div>
-            <label class="input-label">Price per ct (₹)</label><input type="number" id="p_amt" placeholder="₹ 0">
-            <button class="btn btn-blue" onclick="savePriceRule()">+ Save Rate</button>
-        </div>
-        <div id="priceList"></div>
-    </div>
 
-    <div id="reports" class="container">
-        <h2>Reports</h2>
-        <div class="summary-grid">
-            <div><h3 id="totCount" style="color:var(--accent)">0</h3><small>Stones</small></div>
-            <div><h3 id="totWt">0.00</h3><small>Total ct</small></div>
-            <div><h3 id="totVal" style="color:var(--success)">₹0</h3><small>Value</small></div>
-        </div>
-        
-        <div style="display:flex; gap:10px; margin-bottom:20px;">
-            <input type="month" id="filterMonth" onchange="loadReports()" style="flex:2; border-radius:30px; padding:10px 20px; margin-bottom:0;">
-            <select id="sortOption" onchange="loadReports()" style="flex:1; border-radius:30px; padding:10px; margin-bottom:0; font-size: 14px;">
-                <option value="date">Date</option>
-                <option value="weight">Weight</option>
-                <option value="val">Value</option>
-            </select>
+            <div id="customShapeList"></div>
         </div>
 
-        <div id="historyList"></div>
+        <!-- TAB 3: REPORTS -->
+        <div id="reports" class="container">
+            <h2>Reports</h2>
+            <div class="summary-grid">
+                <div><h3 id="totCount" style="color:var(--accent)">0</h3><small>Stones</small></div>
+                <div><h3 id="totWt">0.00</h3><small>Total ct</small></div>
+                <div><h3 id="totVal" style="color:var(--success)">₹0</h3><small>Value</small></div>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <input type="month" id="filterMonth" onchange="loadReports()" style="flex:2; border-radius:30px; padding:10px 20px; margin-bottom:0;">
+                <select id="sortOption" onchange="loadReports()" style="flex:1; border-radius:30px; padding:10px; margin-bottom:0; font-size: 14px;">
+                    <option value="date">Date</option>
+                    <option value="weight">Weight</option>
+                    <option value="val">Value</option>
+                </select>
+            </div>
+
+            <div id="historyList"></div>
+        </div>
+
+        <!-- BOTTOM NAVIGATION -->
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="showTab('entry')"><span class="nav-icon">⊕</span><span>Entry</span></div>
+            <div class="nav-item" onclick="showTab('prices')"><span class="nav-icon">🏷</span><span>Prices</span></div>
+            <div class="nav-item" onclick="showTab('reports')"><span class="nav-icon">📊</span><span>Reports</span></div>
+        </div>
     </div>
 
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="showTab('entry')"><span class="nav-icon">⊕</span><span>Entry</span></div>
-        <div class="nav-item" onclick="showTab('prices')"><span class="nav-icon">🏷</span><span>Prices</span></div>
-        <div class="nav-item" onclick="showTab('reports')"><span class="nav-icon">📊</span><span>Reports</span></div>
-    </div>
-</div>
-
-<script>
-let registration;
-if ('serviceWorker' in navigator) { 
-    navigator.serviceWorker.register('sw.js').then(reg => { registration = reg; }); 
-}
-
-// Update Function
-function updateApp() {
-    if (registration) {
-        registration.update().then(() => {
-            alert("Checking for updates... If any are found, the app will restart.");
-            location.reload();
-        });
-    } else {
-        location.reload();
+    <script>
+    // --- SERVICE WORKER & APP UPDATE ---
+    let registration;
+    if ('serviceWorker' in navigator) { 
+        navigator.serviceWorker.register('sw.js').then(reg => { registration = reg; }).catch(() => {}); 
     }
-}
 
-const firebaseConfig = { apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo", authDomain: "daimond-calculator.firebaseapp.com", projectId: "daimond-calculator", storageBucket: "daimond-calculator.firebasestorage.app", messagingSenderId: "1076337600089", appId: "1:1076337600089:web:dce0e8433eb4551c563348" };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth(), db = firebase.firestore();
+    function updateApp() {
+        if (registration) {
+            registration.update().then(() => {
+                alert("Checking for updates... If any are found, the app will restart.");
+                location.reload();
+            });
+        } else {
+            location.reload();
+        }
+    }
 
-let selectedValues = { shape: 'Oval', cut: 'Ex', grp: 'Fancy', pcut: 'Ex' };
-let userPrices = [];
+    // --- FIREBASE INITIALIZATION ---
+    const firebaseConfig = { 
+        apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo", 
+        authDomain: "daimond-calculator.firebaseapp.com", 
+        projectId: "daimond-calculator", 
+        storageBucket: "daimond-calculator.firebasestorage.app", 
+        messagingSenderId: "1076337600089", 
+        appId: "1:1076337600089:web:dce0e8433eb4551c563348" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth(), db = firebase.firestore();
 
-document.getElementById('entryDate').valueAsDate = new Date();
-if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    // --- DEFAULT & USER STATE ---
+    const DEFAULT_SHAPES = [
+        { name: 'Oval', grp: 'Fancy' },
+        { name: 'Marquise', grp: 'Fancy' },
+        { name: 'Pear', grp: 'Fancy' },
+        { name: 'Round', grp: 'Step' },
+        { name: 'Radiant', grp: 'Step' },
+        { name: 'Emerald', grp: 'Step' },
+        { name: 'Cushion', grp: 'Step' },
+        { name: 'Hexa', grp: 'Step' }
+    ];
 
-function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
-function toggleTheme() { 
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-}
+    let userShapes = [...DEFAULT_SHAPES];
+    let selectedValues = { shape: 'Oval', cut: 'Ex', grp: 'Fancy', pcut: 'Ex', cshape_grp: 'Fancy' };
+    let userPrices = [];
+    let html5QrcodeScanner = null;
 
-async function signInWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    try { await auth.signInWithPopup(provider); } catch(e) { alert(e.message); }
-}
+    // Utility: XSS Escaping
+    function escapeHTML(str) {
+        return String(str || '').replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+        });
+    }
 
-auth.onAuthStateChanged(u => {
-    // FIX FLICKER: Set display based on auth status
-    document.getElementById('auth-screen').style.display = u ? 'none' : 'flex';
-    document.getElementById('main-app').style.display = u ? 'block' : 'none';
-    if(u) { document.getElementById('filterMonth').value = new Date().toISOString().slice(0,7); loadPrices(); loadReports(); }
-});
+    document.getElementById('entryDate').valueAsDate = new Date();
+    if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 
-function setSegment(key, val) {
-    selectedValues[key] = val;
-    const containerId = key === 'grp' ? 'grp-segments' : (key === 'pcut' ? 'pcut-segments' : (key === 'shape' ? 'shape-segments' : 'cut-segments'));
-    document.querySelectorAll(`#${containerId} .segment-btn`).forEach(btn => { btn.classList.toggle('active', btn.innerText.includes(val)); });
-    if(key === 'shape' || key === 'cut') lookupPrice();
-}
+    // --- NAVIGATION & MODALS ---
+    function toggleMenu() { 
+        document.getElementById('side-menu').classList.toggle('open'); 
+        document.getElementById('overlay').classList.toggle('active'); 
+    }
 
-function lookupPrice() {
-    const shp = selectedValues.shape, cut = selectedValues.cut, wt = parseFloat(document.getElementById('weight').value) || 0;
-    const grp = ["Oval", "Marquise", "Pear"].includes(shp) ? "Fancy" : "Step";
-    const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);
-    if(match) document.getElementById('price').value = match.amt;
-}
+    function toggleTheme() { 
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    }
 
-async function saveStone() {
-    const s = { date: document.getElementById('entryDate').value, barcode: document.getElementById('barcode').value || "No ID", shape: selectedValues.shape, cut: selectedValues.cut, weight: parseFloat(document.getElementById('weight').value), price: parseFloat(document.getElementById('price').value), month: document.getElementById('entryDate').value.slice(0,7) };
-    if(isNaN(s.weight) || isNaN(s.price)) return alert("Check values");
-    await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(s);
-    document.getElementById('barcode').value = ''; document.getElementById('weight').value = '';
-    loadReports(); alert("Saved!");
-}
+    function openHelpModal() {
+        toggleMenu();
+        document.getElementById('helpModal').classList.add('active');
+    }
 
-async function savePriceRule() {
-    const r = { grp: selectedValues.grp, cut: selectedValues.pcut, min: parseFloat(document.getElementById('p_min').value), max: parseFloat(document.getElementById('p_max').value), amt: parseFloat(document.getElementById('p_amt').value) };
-    await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(r);
-    loadPrices();
-}
+    function openFounderModal() {
+        toggleMenu();
+        document.getElementById('founderModal').classList.add('active');
+    }
 
-async function loadPrices() {
-    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();
-    userPrices = []; let h = '';
-    snap.forEach(doc => { 
-        const r = doc.data(); userPrices.push(r); 
-        h += `<div class="report-item"><div class="report-info"><b>${r.grp} (${r.cut})</b><small>${r.min}-${r.max}ct</small></div><div style="display:flex; align-items:center; gap:15px"><b class="val-text">₹${r.amt}</b><span onclick="del('prices','${doc.id}',loadPrices)" style="color:var(--danger); cursor:pointer">✕</span></div></div>`; 
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function showTab(id) {
+        document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        const index = id === 'entry' ? 0 : (id === 'prices' ? 1 : 2);
+        document.querySelectorAll('.nav-item')[index].classList.add('active');
+    }
+
+    // --- AUTHENTICATION ---
+    async function signInWithGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        try { 
+            await auth.signInWithPopup(provider); 
+        } catch(e) { 
+            alert(e.message); 
+        }
+    }
+
+    auth.onAuthStateChanged(async u => {
+        document.getElementById('auth-screen').style.display = u ? 'none' : 'flex';
+        document.getElementById('main-app').style.display = u ? 'block' : 'none';
+        if(u) { 
+            document.getElementById('filterMonth').value = new Date().toISOString().slice(0,7); 
+            await loadShapes();
+            await loadPrices(); 
+            loadReports(); 
+        }
     });
-    document.getElementById('priceList').innerHTML = h;
-}
 
-async function loadReports() {
-    const m = document.getElementById('filterMonth').value;
-    const sortVal = document.getElementById('sortOption').value;
-    const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones").where("month", "==", m).get();
-    
-    let stones = [];
-    snap.forEach(doc => { 
-        let s = doc.data(); 
-        s.id = doc.id; 
-        s.totalVal = s.weight * s.price;
-        stones.push(s); 
-    });
-    // Sorting Logic
-    stones.sort((a, b) => {
-        if (sortVal === 'date') return new Date(b.date) - new Date(a.date);
-        if (sortVal === 'weight') return b.weight - a.weight;
-        if (sortVal === 'val') return b.totalVal - a.totalVal;
-        return 0;
-    });
+    // --- BARCODE SCANNER LOGIC ---
+    function startScanner() {
+        if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            alert("Camera access requires a secure HTTPS connection.");
+            return;
+        }
 
-    let h = '', tC = 0, tW = 0, tV = 0;
-    stones.forEach(s => { 
-        tC++; tW += s.weight; tV += s.totalVal; 
-        h += `<div class="report-item"><div class="report-info"><b>${s.barcode}</b><small>${s.date} • ${s.shape} • ${s.cut} • ${s.weight}ct @ ₹${s.price}</small></div><div style="text-align:right"><div class="val-text" style="color:var(--success)">₹${s.totalVal.toLocaleString(undefined, {minimumFractionDigits: 1})}</div><span onclick="openEditModal('${s.id}','${s.date}','${s.barcode}',${s.weight},${s.price})" style="color:var(--accent); font-size:11px; cursor:pointer">EDIT</span><span onclick="del('stones','${s.id}',loadReports)" style="color:var(--danger); margin-left:10px; font-size:11px; cursor:pointer">DELETE</span></div></div>`; 
-    });
-    document.getElementById('totCount').innerText = tC; 
-    document.getElementById('totWt').innerText = tW.toFixed(2); 
-    document.getElementById('totVal').innerText = "₹" + tV.toLocaleString(undefined, {minimumFractionDigits: 1});
-    document.getElementById('historyList').innerHTML = h;
-}
+        document.getElementById('scannerModal').classList.add('active');
+        
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5Qrcode("scanner-reader");
+        }
 
-function openEditModal(id, date, barcode, weight, price) { document.getElementById('edit-id').value = id; document.getElementById('edit-date').value = date; document.getElementById('edit-barcode').value = barcode; document.getElementById('edit-weight').value = weight; document.getElementById('edit-price').value = price; document.getElementById('editModal').classList.add('active'); }
-function closeModal() { document.getElementById('editModal').classList.remove('active'); }
-async function updateStone() { const id = document.getElementById('edit-id').value; const data = { date: document.getElementById('edit-date').value, barcode: document.getElementById('edit-barcode').value, weight: parseFloat(document.getElementById('edit-weight').value), price: parseFloat(document.getElementById('edit-price').value), month: document.getElementById('edit-date').value.slice(0,7) }; await db.collection("users").doc(auth.currentUser.uid).collection("stones").doc(id).update(data); closeModal(); loadReports(); }
-async function del(c, id, cb) { if(confirm("Delete?")) { await db.collection("users").doc(auth.currentUser.uid).collection(c).doc(id).delete(); cb(); } }
-function showTab(id) {
-    document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    const index = id === 'entry' ? 0 : (id === 'prices' ? 1 : 2);
-    document.querySelectorAll('.nav-item')[index].classList.add('active');
-}
-</script>
+        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+        html5QrcodeScanner.start(
+            { facingMode: "environment" }, 
+            config, 
+            (decodedText) => {
+                document.getElementById('barcode').value = decodedText;
+                stopScanner();
+            },
+            () => { /* Scanning continuous, silence errors */ }
+        ).catch(err => {
+            alert("Camera permission is required to scan a barcode or camera is unavailable.");
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+            html5QrcodeScanner.stop().then(() => {
+                document.getElementById('scannerModal').classList.remove('active');
+            }).catch(() => {
+                document.getElementById('scannerModal').classList.remove('active');
+            });
+        } else {
+            document.getElementById('scannerModal').classList.remove('active');
+        }
+    }
+
+    // --- SEGMENT CONTROLS & LOOKUP ---
+    function setSegment(key, val) {
+        selectedValues[key] = val;
+        
+        let containerId = '';
+        if (key === 'grp') containerId = 'grp-segments';
+        else if (key === 'pcut') containerId = 'pcut-segments';
+        else if (key === 'shape') containerId = 'shape-segments';
+        else if (key === 'cut') containerId = 'cut-segments';
+        else if (key === 'cshape_grp') containerId = 'cshape-grp-segments';
+
+        if (containerId) {
+            document.querySelectorAll(`#${containerId} .segment-btn`).forEach(btn => { 
+                btn.classList.toggle('active', btn.innerText.includes(val)); 
+            });
+        }
+
+        if (key === 'shape' || key === 'cut') {
+            lookupPrice();
+        }
+    }
+
+    function getDepartmentForShape(shapeName) {
+        const found = userShapes.find(s => s.name.toLowerCase() === shapeName.toLowerCase());
+        return found ? found.grp : 'Step';
+    }
+
+    function lookupPrice() {
+        const shp = selectedValues.shape;
+        const cut = selectedValues.cut;
+        const wt = parseFloat(document.getElementById('weight').value) || 0;
+        
+        if (wt <= 0) return;
+
+        const grp = getDepartmentForShape(shp);
+        const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);
+        
+        if (match) {
+            document.getElementById('price').value = match.amt;
+        } else {
+            // Unchanged/Manual rate entry option
+        }
+    }
+
+    // --- SHAPES MANAGEMENT ---
+    async function loadShapes() {
+        if (!auth.currentUser) return;
+        const docRef = db.collection("users").doc(auth.currentUser.uid);
+        const snap = await docRef.get();
+        
+        userShapes = [...DEFAULT_SHAPES];
+        if (snap.exists && snap.data().customShapes) {
+            const customList = snap.data().customShapes || [];
+            customList.forEach(cs => {
+                if (!userShapes.some(s => s.name.toLowerCase() === cs.name.toLowerCase())) {
+                    userShapes.push(cs);
+                }
+            });
+        }
+
+        renderShapeSegments();
+        renderCustomShapeList();
+    }
+
+    function renderShapeSegments() {
+        let html = '';
+        userShapes.forEach((s, idx) => {
+            const activeClass = (selectedValues.shape === s.name || (idx === 0 && !selectedValues.shape)) ? 'active' : '';
+            if (idx === 0 && !selectedValues.shape) selectedValues.shape = s.name;
+            html += `<button class="segment-btn ${activeClass}" onclick="setSegment('shape', '${escapeHTML(s.name)}')">${escapeHTML(s.name)}</button>`;
+        });
+        document.getElementById('shape-segments').innerHTML = html;
+    }
+
+    function renderCustomShapeList() {
+        const customOnly = userShapes.filter(s => !DEFAULT_SHAPES.some(d => d.name.toLowerCase() === s.name.toLowerCase()));
+        let html = '';
+        if (customOnly.length > 0) {
+            html += '<span class="section-label" style="margin-top:10px;">Custom Shapes</span>';
+            customOnly.forEach(s => {
+                html += `<div class="shape-list-item">
+                    <span><b>${escapeHTML(s.name)}</b> (${escapeHTML(s.grp)})</span>
+                    <button class="delete-shape-btn" onclick="deleteCustomShape('${escapeHTML(s.name)}')">✕ Delete</button>
+                </div>`;
+            });
+        }
+        document.getElementById('customShapeList').innerHTML = html;
+    }
+
+    async function saveCustomShape() {
+        const nameInput = document.getElementById('custom_shape_name');
+        const name = nameInput.value.trim();
+        const grp = selectedValues.cshape_grp || 'Fancy';
+
+        if (!name) {
+            alert("Please enter a shape name.");
+            return;
+        }
+
+        const exists = userShapes.some(s => s.name.toLowerCase() === name.toLowerCase());
+        if (exists) {
+            alert("Shape already exists.");
+            return;
+        }
+
+        const newShape = { name, grp };
+        userShapes.push(newShape);
+
+        const customOnly = userShapes.filter(s => !DEFAULT_SHAPES.some(d => d.name.toLowerCase() === s.name.toLowerCase()));
+        
+        await db.collection("users").doc(auth.currentUser.uid).set({
+            customShapes: customOnly
+        }, { merge: true });
+
+        nameInput.value = '';
+        renderShapeSegments();
+        renderCustomShapeList();
+        alert("Shape added successfully!");
+    }
+
+    async function deleteCustomShape(shapeName) {
+        if (!confirm(`Delete custom shape "${shapeName}"?`)) return;
+
+        userShapes = userShapes.filter(s => s.name.toLowerCase() !== shapeName.toLowerCase());
+        const customOnly = userShapes.filter(s => !DEFAULT_SHAPES.some(d => d.name.toLowerCase() === s.name.toLowerCase()));
+
+        await db.collection("users").doc(auth.currentUser.uid).set({
+            customShapes: customOnly
+        }, { merge: true });
+
+        if (selectedValues.shape === shapeName) {
+            selectedValues.shape = userShapes[0].name;
+        }
+
+        renderShapeSegments();
+        renderCustomShapeList();
+        lookupPrice();
+    }
+
+    // --- STONES ENTRY MANAGEMENT ---
+    async function saveStone() {
+        const s = { 
+            date: document.getElementById('entryDate').value, 
+            barcode: document.getElementById('barcode').value.trim() || "No ID", 
+            shape: selectedValues.shape, 
+            cut: selectedValues.cut, 
+            weight: parseFloat(document.getElementById('weight').value), 
+            price: parseFloat(document.getElementById('price').value), 
+            month: document.getElementById('entryDate').value.slice(0,7) 
+        };
+        
+        if (isNaN(s.weight) || s.weight <= 0) return alert("Please enter a valid weight.");
+        if (isNaN(s.price) || s.price < 0) return alert("Please enter a valid rate.");
+
+        await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(s);
+        document.getElementById('barcode').value = ''; 
+        document.getElementById('weight').value = '';
+        document.getElementById('price').value = '';
+        loadReports(); 
+        alert("Saved!");
+    }
+
+    // --- PRICE RULES MANAGEMENT ---
+    async function savePriceRule() {
+        const min = parseFloat(document.getElementById('p_min').value);
+        const max = parseFloat(document.getElementById('p_max').value);
+        const amt = parseFloat(document.getElementById('p_amt').value);
+        
+        if (isNaN(min) || isNaN(max) || isNaN(amt) || min > max) {
+            return alert("Please enter valid weight range and price amount.");
+        }
+        
+        // Check for boundary overlaps in current rules
+        const overlap = userPrices.some(r => r.grp === selectedValues.grp && r.cut === selectedValues.pcut && ((min >= r.min && min < r.max) || (max > r.min && max <= r.max)));
+        if (overlap) {
+            if (!confirm("Warning: This rule overlaps with an existing pricing range. Do you still want to add it?")) return;
+        }
+
+        const r = { grp: selectedValues.grp, cut: selectedValues.pcut, min, max, amt };
+        await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(r);
+        
+        document.getElementById('p_min').value = '';
+        document.getElementById('p_max').value = '';
+        document.getElementById('p_amt').value = '';
+        
+        loadPrices();
+    }
+
+    async function loadPrices() {
+        if (!auth.currentUser) return;
+        const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();
+        userPrices = []; 
+        let h = '';
+        snap.forEach(doc => { 
+            const r = doc.data(); 
+            userPrices.push(r); 
+            h += `<div class="report-item">
+                <div class="report-info">
+                    <b>${escapeHTML(r.grp)} (${escapeHTML(r.cut)})</b>
+                    <small>${r.min}-${r.max}ct</small>
+                </div>
+                <div style="display:flex; align-items:center; gap:15px">
+                    <b class="val-text">₹${r.amt}</b>
+                    <span onclick="del('prices','${doc.id}',loadPrices)" style="color:var(--danger); cursor:pointer">✕</span>
+                </div>
+            </div>`; 
+        });
+        document.getElementById('priceList').innerHTML = h;
+    }
+
+    // --- REPORTS MANAGEMENT ---
+    async function loadReports() {
+        if (!auth.currentUser) return;
+        const m = document.getElementById('filterMonth').value;
+        const sortVal = document.getElementById('sortOption').value;
+        const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones").where("month", "==", m).get();
+        
+        let stones = [];
+        snap.forEach(doc => { 
+            let s = doc.data(); 
+            s.id = doc.id; 
+            s.totalVal = s.weight * s.price;
+            stones.push(s); 
+        });
+
+        stones.sort((a, b) => {
+            if (sortVal === 'date') return new Date(b.date) - new Date(a.date);
+            if (sortVal === 'weight') return b.weight - a.weight;
+            if (sortVal === 'val') return b.totalVal - a.totalVal;
+            return 0;
+        });
+
+        let h = '', tC = 0, tW = 0, tV = 0;
+        stones.forEach(s => { 
+            tC++; 
+            tW += s.weight; 
+            tV += s.totalVal; 
+            h += `<div class="report-item">
+                <div class="report-info">
+                    <b>#${escapeHTML(s.barcode)}</b>
+                    <small>${escapeHTML(s.date)} • ${escapeHTML(s.shape)} • ${escapeHTML(s.cut)} • ${s.weight}ct @ ₹${s.price}</small>
+                </div>
+                <div style="text-align:right">
+                    <div class="val-text" style="color:var(--success)">₹${s.totalVal.toLocaleString(undefined, {minimumFractionDigits: 1})}</div>
+                    <span onclick="openEditModal('${s.id}','${escapeHTML(s.date)}','${escapeHTML(s.barcode)}',${s.weight},${s.price})" style="color:var(--accent); font-size:11px; cursor:pointer">EDIT</span>
+                    <span onclick="del('stones','${s.id}',loadReports)" style="color:var(--danger); margin-left:10px; font-size:11px; cursor:pointer">DELETE</span>
+                </div>
+            </div>`; 
+        });
+
+        document.getElementById('totCount').innerText = tC; 
+        document.getElementById('totWt').innerText = tW.toFixed(2); 
+        document.getElementById('totVal').innerText = "₹" + tV.toLocaleString(undefined, {minimumFractionDigits: 1});
+        document.getElementById('historyList').innerHTML = h;
+    }
+
+    function openEditModal(id, date, barcode, weight, price) { 
+        document.getElementById('edit-id').value = id; 
+        document.getElementById('edit-date').value = date; 
+        document.getElementById('edit-barcode').value = barcode; 
+        document.getElementById('edit-weight').value = weight; 
+        document.getElementById('edit-price').value = price; 
+        document.getElementById('editModal').classList.add('active'); 
+    }
+
+    async function updateStone() { 
+        const id = document.getElementById('edit-id').value; 
+        const data = { 
+            date: document.getElementById('edit-date').value, 
+            barcode: document.getElementById('edit-barcode').value.trim() || "No ID", 
+            weight: parseFloat(document.getElementById('edit-weight').value), 
+            price: parseFloat(document.getElementById('edit-price').value), 
+            month: document.getElementById('edit-date').value.slice(0,7) 
+        }; 
+        if (isNaN(data.weight) || data.weight <= 0 || isNaN(data.price) || data.price < 0) {
+            return alert("Please enter valid weight and price values.");
+        }
+        await db.collection("users").doc(auth.currentUser.uid).collection("stones").doc(id).update(data); 
+        closeModal('editModal'); 
+        loadReports(); 
+    }
+
+    async function del(c, id, cb) { 
+        if(confirm("Delete record?")) { 
+            await db.collection("users").doc(auth.currentUser.uid).collection(c).doc(id).delete(); 
+            cb(); 
+        } 
+    }
+    </script>
 </body>
 </html>
