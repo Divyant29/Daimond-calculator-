@@ -18,9 +18,6 @@
  <!-- Barcode Scanner Library -->
  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
- <!-- Google AdSense Script Placeholder -->
- <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
-
  <style>
  :root { 
    --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --label: #64748b;
@@ -101,8 +98,8 @@
  .modal-card { background: var(--card); width: 100%; max-width: 400px; padding: 25px; border-radius: 20px; max-height: 90vh; overflow-y: auto; }
 
  /* UPDATE BANNER */
- #update-banner { display: none; background: #3b82f6; color: white; text-align: center; padding: 10px; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; font-weight: 600; font-size: 14px; }
- #update-banner button { background: white; color: #3b82f6; border: none; padding: 5px 12px; margin-left: 10px; border-radius: 15px; cursor: pointer; font-weight: 700; }
+ #update-banner { display: none; background: #3b82f6; color: white; text-align: center; padding: 12px; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; font-weight: 600; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+ #update-banner button { background: white; color: #3b82f6; border: none; padding: 6px 14px; margin-left: 10px; border-radius: 15px; cursor: pointer; font-weight: 700; }
 
  /* ADSENSE HOLDER */
  .adsense-box { width: 100%; min-height: 90px; background: var(--card-inner); border: 1px dashed var(--input-border); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--label); font-size: 12px; }
@@ -120,8 +117,8 @@
 
  <!-- UPDATE BANNER -->
  <div id="update-banner">
-   <span id="update-text">New Update Available!</span>
-   <button onclick="applyUpdate()">Update Now</button>
+   <span id="update-text" data-i18n="updateNotice">New Update Available!</span>
+   <button onclick="applyUpdate()" data-i18n="updateBtn">Update Now</button>
  </div>
 
  <!-- AUTH SCREEN -->
@@ -148,29 +145,29 @@
  <!-- OVERLAY & SIDE MENU -->
  <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
  <div class="side-menu" id="side-menu">
-   <h3 style="margin-bottom:20px">Settings</h3>
+   <h3 style="margin-bottom:20px" data-i18n="settings">Settings</h3>
    
    <label class="input-label">Language / ભાષા / भाषा</label>
    <select id="langSelect" onchange="changeLanguage(this.value)">
      <option value="en">🌐 English</option>
-     <option value="hi">🌐 हिन्दी</option>
      <option value="gu">🌐 ગુજરાતી</option>
+    <option value="hi">🌐 हिन्दी</option>
      <option value="add">+ Add Language</option>
    </select>
 
-   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="toggleTheme()">🌓 Change Theme</button>
-   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openModal('aboutModal')">ℹ️ About</button>
-   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openModal('privacyModal')">🔒 Privacy Policy</button>
-   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openModal('termsModal')">📜 Terms & Conditions</button>
-   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openHelpModal()">🆘 Help & Support</button>
-   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openFounderModal()">👤 Founder</button>
-   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="checkUpdateManual()">🔄 Check for Update</button>
-   <button class="btn" style="background: var(--danger); color: white; margin-top: 20px;" onclick="auth.signOut()">➜] Logout</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="toggleTheme()" data-i18n="toggleTheme">🌓 Toggle Theme</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openModal('aboutModal')" data-i18n="about">ℹ️ About</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openModal('privacyModal')" data-i18n="privacy">🔒 Privacy Policy</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openModal('termsModal')" data-i18n="terms">📜 Terms & Conditions</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openHelpModal()" data-i18n="help">🆘 Help & Support</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openFounderModal()" data-i18n="founder">👤 Founder</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="checkUpdateManual()" data-i18n="checkUpdate">🔄 Check for Update</button>
+   <button class="btn" style="background: var(--danger); color: white; margin-top: 20px;" onclick="auth.signOut()" data-i18n="logout">🔴 Logout</button>
  </div>
 
  <!-- NAVBAR -->
  <div class="navbar">
-   <b style="letter-spacing: 1px;">DIAMOND CALCULATOR</b>
+   <b style="letter-spacing: 1px;" data-i18n="appTitle">DIAMOND CALCULATOR</b>
    <div onclick="toggleMenu()" style="cursor:pointer; font-size:24px;">☰</div>
  </div>
 
@@ -204,13 +201,13 @@
    <div class="modal-card">
      <h3 style="margin-bottom:20px; color: var(--accent);">Edit Record</h3>
      <input type="hidden" id="edit-id">
-     <label class="input-label" for="edit-date">Date</label>
+     <label class="input-label" for="edit-date" data-i18n="date">Date</label>
      <input type="date" id="edit-date">
-     <label class="input-label" for="edit-barcode">Packet ID</label>
+     <label class="input-label" for="edit-barcode" data-i18n="packetNo">Packet ID</label>
      <input type="text" id="edit-barcode">
-     <label class="input-label" for="edit-weight">Weight (ct)</label>
+     <label class="input-label" for="edit-weight" data-i18n="weight">Weight (ct)</label>
      <input type="number" id="edit-weight" step="0.01" min="0.01">
-     <label class="input-label" for="edit-price">Rate (₹)</label>
+     <label class="input-label" for="edit-price" data-i18n="rate">Rate (₹)</label>
      <input type="number" id="edit-price" min="0">
      <button class="btn btn-green" onclick="updateStone()">Update Record</button>
      <button class="btn" style="background:none; color:var(--label); margin-top:10px" onclick="closeModal('editModal')">Cancel</button>
@@ -247,7 +244,7 @@
    <div class="modal-card" style="text-align: center;">
      <h3 style="margin-bottom:10px; color: var(--accent);">👤 Founder</h3>
      <h2 style="margin-bottom:5px; color: var(--text);">Divyant Parmar</h2>
-     <p style="font-size:13px; color:var(--label); margin-bottom:20px;">Diamond Calculator </p>
+     <p style="font-size:13px; color:var(--label); margin-bottom:20px;">Diamond Calculator / Diamond Manager</p>
      <button class="btn" style="background:none; color:var(--label);" onclick="closeModal('founderModal')">Close</button>
    </div>
  </div>
@@ -260,80 +257,79 @@
 
      <!-- ADSENSE UNIT PLACEHOLDER -->
      <div class="adsense-box" id="adsense-container">
-       <!-- Replace with actual AdSense Ins Unit Code -->
-       <span>Ad Placement Container</span>
+       <span> જાહેરાત આપવા સંપર્ક કરો / Contact For Ads</span>
      </div>
 
      <div class="main-card">
-       <label class="input-label" for="barcode">Packet Number</label>
+       <label class="input-label" for="barcode" data-i18n="packetNo">Packet Number</label>
        <div class="input-group">
-         <input type="text" id="barcode" placeholder="# Barcode / Packet no.">
+         <input type="text" id="barcode" placeholder="# Barcode / Packet no." data-i18n-placeholder="packetPlaceholder">
          <button class="scan-btn-inline" onclick="startScanner()" title="Scan Barcode">📷</button>
        </div>
 
-       <span class="section-label">Cut</span>
+       <span class="section-label" data-i18n="cut">Cut</span>
        <div class="segment-container" id="cut-segments">
          <button class="segment-btn active" onclick="setSegment('cut', 'Ex')">Ex</button>
          <button class="segment-btn" onclick="setSegment('cut', 'VG')">VG</button>
        </div>
 
-       <span class="section-label">Shape</span>
+       <span class="section-label" data-i18n="shape">Shape</span>
        <div class="segment-container" id="shape-segments"></div>
 
        <div style="display:flex; gap:15px;">
          <div style="flex:1;">
-           <label class="input-label" for="weight">Weight (ct)</label>
+           <label class="input-label" for="weight" data-i18n="weight">Weight (ct)</label>
            <input type="number" id="weight" step="0.01" min="0.01" placeholder="0.00" oninput="lookupPrice()">
          </div>
          <div style="flex:1;">
-           <label class="input-label" for="price">Rate / ct</label>
+           <label class="input-label" for="price" data-i18n="rate">Rate / ct</label>
            <input type="number" id="price" min="0" placeholder="₹ 0">
          </div>
        </div>
        
-       <label class="input-label" for="entryDate">Date</label>
+       <label class="input-label" for="entryDate" data-i18n="date">Date</label>
        <input type="date" id="entryDate">
-       <button class="btn btn-green" onclick="saveStone()">✓ Save Stone</button>
+       <button class="btn btn-green" onclick="saveStone()" data-i18n="saveStone">✓ Save Stone</button>
      </div>
    </div>
 
    <!-- TAB 2: PRICES & SHAPES -->
    <div id="prices" class="container">
-     <h2>Price Rules</h2>
+     <h2 data-i18n="priceRules">Price Rules</h2>
      <div class="main-card">
-       <span class="section-label">Add New Rate</span>
-       <label class="input-label">Department</label>
+       <span class="section-label" data-i18n="addRate">Add New Rate</span>
+       <label class="input-label" data-i18n="dept">Department</label>
        <div class="segment-container" id="grp-segments" style="margin-bottom:15px">
          <button class="segment-btn active" onclick="setSegment('grp', 'Fancy')">Fancy</button>
          <button class="segment-btn" onclick="setSegment('grp', 'Step Cut')">Step Cut</button>
          <button class="segment-btn" onclick="setSegment('grp', 'Round')">Round</button>
          <button class="segment-btn" onclick="setSegment('grp', 'Step Cut Fancy')">Step Cut Fancy</button>
        </div>
-       <label class="input-label">Cut</label>
+       <label class="input-label" data-i18n="cut">Cut</label>
        <div class="segment-container" id="pcut-segments">
          <button class="segment-btn active" onclick="setSegment('pcut', 'Ex')">Ex</button>
          <button class="segment-btn" onclick="setSegment('pcut', 'VG')">VG</button>
        </div>
-       <label class="input-label">Weight Range (ct)</label>
+       <label class="input-label" data-i18n="weightRange">Weight Range (ct)</label>
        <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px">
          <input type="number" id="p_min" step="0.01" min="0" placeholder="Min" style="margin:0">
          <span style="color:var(--label)">—</span>
          <input type="number" id="p_max" step="0.01" min="0" placeholder="Max" style="margin:0">
        </div>
-       <label class="input-label" for="p_amt">Price per ct (₹)</label>
+       <label class="input-label" for="p_amt" data-i18n="rate">Price per ct (₹)</label>
        <input type="number" id="p_amt" min="0" placeholder="₹ 0">
-       <button class="btn btn-blue" onclick="savePriceRule()">+ Save Rate</button>
+       <button class="btn btn-blue" onclick="savePriceRule()" data-i18n="saveRateBtn">+ Save Rate</button>
      </div>
 
      <div id="priceList" style="margin-bottom: 25px;"></div>
 
-     <h2>Add Shape</h2>
+     <h2 data-i18n="addShape">Add Shape</h2>
      <div class="main-card">
-       <span class="section-label">New Custom Shape</span>
-       <label class="input-label" for="custom_shape_name">Shape Name</label>
+       <span class="section-label" data-i18n="newShape">New Custom Shape</span>
+       <label class="input-label" for="custom_shape_name" data-i18n="shapeName">Shape Name</label>
        <input type="text" id="custom_shape_name" placeholder="e.g. Heart, Princess, Trillion">
        
-       <label class="input-label">Department</label>
+       <label class="input-label" data-i18n="dept">Department</label>
        <div class="segment-container" id="cshape-grp-segments" style="margin-bottom:15px">
          <button class="segment-btn active" onclick="setSegment('cshape_grp', 'Fancy')">Fancy</button>
          <button class="segment-btn" onclick="setSegment('cshape_grp', 'Step Cut')">Step Cut</button>
@@ -341,7 +337,7 @@
          <button class="segment-btn" onclick="setSegment('cshape_grp', 'Step Cut Fancy')">Step Cut Fancy</button>
        </div>
 
-       <button class="btn btn-blue" onclick="saveCustomShape()">+ Add Shape</button>
+       <button class="btn btn-blue" onclick="saveCustomShape()" data-i18n="addShapeBtn">+ Add Shape</button>
      </div>
 
      <div id="customShapeList"></div>
@@ -349,11 +345,11 @@
 
    <!-- TAB 3: REPORTS -->
    <div id="reports" class="container">
-     <h2>Reports</h2>
+     <h2 data-i18n="reports">Reports</h2>
      <div class="summary-grid">
-       <div><h3 id="totCount" style="color:var(--accent)">0</h3><small>Stones</small></div>
-       <div><h3 id="totWt">0.00</h3><small>Total ct</small></div>
-       <div><h3 id="totVal" style="color:var(--success)">₹0</h3><small>Value</small></div>
+       <div><h3 id="totCount" style="color:var(--accent)">0</h3><small data-i18n="stones">Stones</small></div>
+       <div><h3 id="totWt">0.00</h3><small data-i18n="totalCt">Total ct</small></div>
+       <div><h3 id="totVal" style="color:var(--success)">₹0</h3><small data-i18n="value">Value</small></div>
      </div>
      
      <div style="display:flex; gap:10px; margin-bottom:20px;">
@@ -370,14 +366,132 @@
 
    <!-- BOTTOM NAVIGATION -->
    <div class="bottom-nav">
-     <div class="nav-item active" onclick="showTab('entry')"><span class="nav-icon">⊕</span><span>Entry</span></div>
-     <div class="nav-item" onclick="showTab('prices')"><span class="nav-icon">🏷</span><span>Prices</span></div>
-     <div class="nav-item" onclick="showTab('reports')"><span class="nav-icon">📊</span><span>Reports</span></div>
+     <div class="nav-item active" onclick="showTab('entry')"><span class="nav-icon">⊕</span><span data-i18n="navEntry">Entry</span></div>
+     <div class="nav-item" onclick="showTab('prices')"><span class="nav-icon">🏷</span><span data-i18n="navPrices">Prices</span></div>
+     <div class="nav-item" onclick="showTab('reports')"><span class="nav-icon">📊</span><span data-i18n="navReports">Reports</span></div>
    </div>
  </div>
 
  <script>
- // --- SERVICE WORKER & APP UPDATE ENGINE ---
+ // --- FULL APP I18N DICTIONARY ---
+ const i18n = {
+   en: {
+     appTitle: "DIAMOND CALCULATOR",
+     packetNo: "Packet Number",
+     packetPlaceholder: "# Barcode / Packet no.",
+     cut: "Cut",
+     shape: "Shape",
+     weight: "Weight (ct)",
+     rate: "Rate / ct",
+     date: "Date",
+     saveStone: "✓ Save Stone",
+     navEntry: "Entry",
+     navPrices: "Prices",
+     navReports: "Reports",
+     priceRules: "Price Rules",
+     addRate: "Add New Rate",
+     dept: "Department",
+     weightRange: "Weight Range (ct)",
+     saveRateBtn: "+ Save Rate",
+     addShape: "Add Shape",
+     newShape: "New Custom Shape",
+     shapeName: "Shape Name",
+     addShapeBtn: "+ Add Shape",
+     reports: "Reports",
+     stones: "Stones",
+     totalCt: "Total ct",
+     value: "Value",
+     settings: "Settings",
+     toggleTheme: "🌓 Change Theme",
+     about: "ℹ️ About",
+     privacy: "🔒 Privacy Policy",
+     terms: "📜 Terms & Conditions",
+     help: "🆘 Help & Support",
+     founder: "👤 Founder",
+     checkUpdate: "🔄 Check for Update",
+     logout: "🔴 Logout",
+     updateNotice: "New Update Available!",
+     updateBtn: "Update Now"
+   },
+   hi: {
+     appTitle: "डायमंड कैलकुलेटर",
+     packetNo: "पैकेट नंबर",
+     packetPlaceholder: "# बारकोड / पैकेट नं.",
+     cut: "कट",
+     shape: "शेप",
+     weight: "वजन (ct)",
+     rate: "रेट / ct",
+     date: "तारीख",
+     saveStone: "✓ स्टोन सेव करें",
+     navEntry: "एंट्री",
+     navPrices: "रेट लिस्ट",
+     navReports: "रिपोर्ट्स",
+     priceRules: "प्राइस रूल्स",
+     addRate: "नया रेट जोड़ें",
+     dept: "विभाग",
+     weightRange: "वजन रेंज (ct)",
+     saveRateBtn: "+ रेट सेव करें",
+     addShape: "शेप जोड़ें",
+     newShape: "नया कस्टम शेप",
+     shapeName: "शेप का नाम",
+     addShapeBtn: "+ शेप जोड़ें",
+     reports: "रिपोर्ट्स",
+     stones: "कुल स्टोन",
+     totalCt: "कुल वजन",
+     value: "कुल कीमत",
+     settings: "सेटिंग्स",
+     toggleTheme: "🌓 थीम बदलें",
+     about: "ℹ️ ऐप के बारे में",
+     privacy: "🔒 गोपनीयता नीति",
+     terms: "📜 नियम और शर्तें",
+     help: "🆘 मदद और सहायता",
+     founder: "👤 संस्थापक",
+     checkUpdate: "🔄 अपडेट चेक करें",
+     logout: "🔴 लॉग आउट",
+     updateNotice: "नया अपडेट उपलब्ध है!",
+     updateBtn: "अभी अपडेट करें"
+   },
+   gu: {
+     appTitle: "ડાયમંડ કેલ્ક્યુલેટર",
+     packetNo: "પેકેટ નંબર",
+     packetPlaceholder: "# બારકોડ / પેકેટ નં.",
+     cut: "કટ",
+     shape: "શેપ",
+     weight: "વજન (ct)",
+     rate: "રેટ / ct",
+     date: "તારીખ",
+     saveStone: "✓ સ્ટોન સેવ કરો",
+     navEntry: "એન્ટ્રી",
+     navPrices: "રેટ લિસ્ટ",
+     navReports: "રિપોર્ટ્સ",
+     priceRules: "પ્રાઇસ રૂલ્સ",
+     addRate: "નવો રેટ ઉમેરો",
+     dept: "ડિપાર્ટમેન્ટ",
+     weightRange: "વજન રેન્જ (ct)",
+     saveRateBtn: "+ રેટ સેવ કરો",
+     addShape: "શેપ ઉમેરો",
+     newShape: "નવો કસ્ટમ શેપ",
+     shapeName: "શેપનું નામ",
+     addShapeBtn: "+ શેપ ઉમેરો",
+     reports: "રિપોર્ટ્સ",
+     stones: "કુલ સ્ટોન",
+     totalCt: "કુલ વજન",
+     value: "કુલ કિંમત",
+     settings: "સેટિંગ્સ",
+     toggleTheme: "🌓 થીમ બદલો",
+     about: "ℹ️ એપ વિષે",
+     privacy: "🔒 પ્રાઈવસી પોલિસી",
+     terms: "📜 નિયમો અને શરતો",
+     help: "🆘 મદદ અને સપોર્ટ",
+     founder: "👤 સ્થાપક",
+     checkUpdate: "🔄 અપડેટ ચેક કરો",
+     logout: "🔴 લોગ આઉટ",
+     updateNotice: "નવું અપડેટ ઉપલબ્ધ છે!",
+     updateBtn: "અત્યારે અપડેટ કરો"
+   }
+ };
+
+ // --- SERVICE WORKER & AUTOMATIC UPDATE ENGINE ---
  let newWorker;
  if ('serviceWorker' in navigator) { 
    navigator.serviceWorker.register('sw.js').then(reg => {
@@ -392,14 +506,32 @@
    }).catch(() => {}); 
  }
 
- function applyUpdate() {
-   if ('caches' in window) {
-     caches.keys().then(names => {
-       for (let name of names) caches.delete(name);
-     });
+ async function applyUpdate() {
+   // 1. Unregister all service workers
+   if ('serviceWorker' in navigator) {
+     const registrations = await navigator.serviceWorker.getRegistrations();
+     for (let registration of registrations) {
+       await registration.unregister();
+     }
    }
+   // 2. Clear all cache storage automatically
+   if ('caches' in window) {
+     const names = await caches.keys();
+     for (let name of names) {
+       await caches.delete(name);
+     }
+   }
+   // 3. Clear transient client storage while preserving language/theme preference
+   const savedLang = localStorage.getItem('appLang');
+   const savedTheme = localStorage.getItem('theme');
+   localStorage.clear();
+   if (savedLang) localStorage.setItem('appLang', savedLang);
+   if (savedTheme) localStorage.setItem('theme', savedTheme);
+
    if (newWorker) newWorker.postMessage({ action: 'skipWaiting' });
-   window.location.reload();
+   
+   // 4. Force reload page from server bypassing cache
+   window.location.reload(true);
  }
 
  function checkUpdateManual() {
@@ -408,16 +540,16 @@
      navigator.serviceWorker.getRegistration().then(reg => {
        if (reg) {
          reg.update().then(() => {
-           alert("Checked for updates. If a new version is available, an update banner will appear.");
+           alert("Checked for updates. If a new version is available, the update banner will appear.");
          });
        }
      });
    } else {
-     location.reload();
+     applyUpdate();
    }
  }
 
- // --- DYNAMIC USER GREETING & LANGUAGE SYSTEM ---
+ // --- DYNAMIC USER GREETING & FULL LANGUAGE SYSTEM ---
  function getUserFirstName() {
    if (auth.currentUser && auth.currentUser.displayName) {
      return auth.currentUser.displayName.split(' ')[0];
@@ -436,26 +568,36 @@
        select.insertBefore(opt, select.lastElementChild);
        select.value = newLang.toLowerCase();
        localStorage.setItem('appLang', newLang.toLowerCase());
-       updateGreeting(newLang.toLowerCase());
+       applyFullLanguage(newLang.toLowerCase());
      } else {
        document.getElementById('langSelect').value = localStorage.getItem('appLang') || 'en';
      }
      return;
    }
    localStorage.setItem('appLang', langKey);
-   updateGreeting(langKey);
+   applyFullLanguage(langKey);
  }
 
- function updateGreeting(langKey) {
+ function applyFullLanguage(langKey) {
    const userName = getUserFirstName();
    const greetings = {
      en: `Hello, ${userName} 👋`,
      hi: `नमस्ते, ${userName} 👋`,
      gu: `નમસ્તે, ${userName} 👋`
    };
+   document.getElementById('greeting-text').innerText = greetings[langKey] || `Hello, ${userName} 👋`;
 
-   const text = greetings[langKey] || `Hello, ${userName} 👋`;
-   document.getElementById('greeting-text').innerText = text;
+   const langData = i18n[langKey] || i18n['en'];
+
+   document.querySelectorAll('[data-i18n]').forEach(el => {
+     const key = el.getAttribute('data-i18n');
+     if (langData[key]) el.innerText = langData[key];
+   });
+
+   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+     const key = el.getAttribute('data-i18n-placeholder');
+     if (langData[key]) el.placeholder = langData[key];
+   });
  }
 
  // --- FIREBASE INITIALIZATION ---
@@ -541,7 +683,7 @@
    if(u) { 
      const savedLang = localStorage.getItem('appLang') || 'en';
      document.getElementById('langSelect').value = savedLang;
-     updateGreeting(savedLang);
+     applyFullLanguage(savedLang);
 
      document.getElementById('filterMonth').value = new Date().toISOString().slice(0,7); 
      await loadShapes();
