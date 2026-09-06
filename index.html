@@ -111,6 +111,986 @@
  .scan-btn-inline { padding: 0 16px; border-radius: 10px; border: 1px solid var(--input-border); background: var(--card-inner); color: var(--text); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
  .delete-shape-btn { margin-left: 4px; color: var(--danger); font-size: 11px; cursor: pointer; border: none; background: none; }
  .shape-list-item { display: flex; justify-content: space-between; align-items: center; background: var(--card-inner); padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; }
+ </style>
+</head>
+<body>
+
+ <!-- UPDATE BANNER -->
+ <div id="update-banner">
+   <span id="update-text" data-i18n="updateNotice">New Update Available!</span>
+   <button onclick="applyUpdate()" data-i18n="updateBtn">Update Now</button>
+ </div>
+
+ <!-- AUTH SCREEN -->
+ <div id="auth-screen">
+   <div class="login-circle">
+     <svg width="60" height="60" viewBox="0 0 24 24">
+       <path d="M12.01 21.49L2 11.43l3.05-6.13h13.92l3.03 6.13-10 10.06z" fill="#93c5fd"/>
+       <path d="M12 21.5l-10-10.07 3.05-6.13h6.95V21.5z" fill="#60a5fa"/>
+       <path d="M18.97 5.3H5.05L2 11.43h20l-3.03-6.13z" fill="#bfdbfe"/>
+       <path d="M12 5.3h6.97l3.03 6.13H12V5.3z" fill="#dbeafe"/>
+     </svg>
+   </div>
+   <h1 class="login-title">DIAMOND</h1>
+   <p class="login-subtitle">Calculator</p>
+   <p class="login-gujarati">તમારા દૈનિક કામની નોંધ કરો</p>
+   <button class="google-btn" onclick="signInWithGoogle()">
+     <div class="g-icon-wrapper">
+       <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="18" alt="Google Logo">
+     </div>
+     Google Login
+   </button>
+ </div>
+
+ <!-- OVERLAY & SIDE MENU -->
+ <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+ <div class="side-menu" id="side-menu">
+   <h3 style="margin-bottom:20px" data-i18n="settings">Settings</h3>
+   
+   <label class="input-label">Language / ભાષા / भाषा</label>
+   <select id="langSelect" onchange="changeLanguage(this.value)">
+     <option value="en">🌐 English</option>
+     <option value="gu">🌐 ગુજરાતી</option>
+    <option value="hi">🌐 हिन्दी</option>
+     <option value="add">+ Add Language</option>
+   </select>
+
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="toggleTheme()" data-i18n="toggleTheme">🌓 Toggle Theme</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openModal('aboutModal')" data-i18n="about">ℹ️ About</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openModal('privacyModal')" data-i18n="privacy">🔒 Privacy Policy</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openModal('termsModal')" data-i18n="terms">📜 Terms & Conditions</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openHelpModal()" data-i18n="help">🆘 Help & Support</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="openFounderModal()" data-i18n="founder">👤 Founder</button>
+   <button class="btn" style="background: var(--input-border); color: var(--text); margin-bottom:12px" onclick="checkUpdateManual()" data-i18n="checkUpdate">🔄 Check for Update</button>
+   <button class="btn" style="background: var(--danger); color: white; margin-top: 20px;" onclick="auth.signOut()" data-i18n="logout">🔴 Logout</button>
+ </div>
+
+ <!-- NAVBAR -->
+ <div class="navbar">
+   <b style="letter-spacing: 1px;" data-i18n="appTitle">DIAMOND CALCULATOR</b>
+   <div onclick="toggleMenu()" style="cursor:pointer; font-size:24px;">☰</div>
+ </div>
+
+ <!-- PUBLIC MODALS -->
+ <div class="modal-overlay" id="aboutModal">
+   <div class="modal-card">
+     <h3>ℹ️ About Diamond Calculator</h3>
+     <p style="font-size:13px; color:var(--label); margin: 15px 0;">Diamond Calculator is an inventory and rate calculation application designed for diamond processing, shape classification, and packet record management.</p>
+     <button class="btn btn-blue" onclick="closeModal('aboutModal')">Close</button>
+   </div>
+ </div>
+
+ <div class="modal-overlay" id="privacyModal">
+   <div class="modal-card">
+     <h3>🔒 Privacy Policy</h3>
+     <p style="font-size:12px; color:var(--label); margin: 15px 0; line-height: 1.5;">Your data is securely stored on Google Firebase. We do not sell or transmit your diamond transaction data to third parties. Authenticated account profiles are protected via Google Sign-In protocols.</p>
+     <button class="btn btn-blue" onclick="closeModal('privacyModal')">Close</button>
+   </div>
+ </div>
+
+ <div class="modal-overlay" id="termsModal">
+   <div class="modal-card">
+     <h3>📜 Terms & Conditions</h3>
+     <p style="font-size:12px; color:var(--label); margin: 15px 0; line-height: 1.5;">By using this application, you agree that calculations are executed based on user-defined rate tables. Verify weight and rate attributes prior to final settlement entries.</p>
+     <button class="btn btn-blue" onclick="closeModal('termsModal')">Close</button>
+   </div>
+ </div>
+
+ <!-- EDIT RECORD MODAL -->
+ <div class="modal-overlay" id="editModal">
+   <div class="modal-card">
+     <h3 style="margin-bottom:20px; color: var(--accent);">Edit Record</h3>
+     <input type="hidden" id="edit-id">
+     <label class="input-label" for="edit-date" data-i18n="date">Date</label>
+     <input type="date" id="edit-date">
+     <label class="input-label" for="edit-barcode" data-i18n="packetNo">Packet ID</label>
+     <input type="text" id="edit-barcode">
+     <label class="input-label" for="edit-weight" data-i18n="weight">Weight (ct)</label>
+     <input type="number" id="edit-weight" step="0.01" min="0.01">
+     <label class="input-label" for="edit-price" data-i18n="rate">Rate (₹)</label>
+     <input type="number" id="edit-price" min="0">
+     <button class="btn btn-green" onclick="updateStone()">Update Record</button>
+     <button class="btn" style="background:none; color:var(--label); margin-top:10px" onclick="closeModal('editModal')">Cancel</button>
+   </div>
+ </div>
+
+ <!-- BARCODE SCANNER MODAL -->
+ <div class="modal-overlay" id="scannerModal">
+   <div class="modal-card" style="text-align: center;">
+     <h3 style="margin-bottom:10px; color: var(--accent);">Scan Barcode</h3>
+     <p style="font-size:12px; color:var(--label); margin-bottom:15px;">Barcode ko camera ke box mein rakhein</p>
+     <div id="scanner-reader"></div>
+     <button class="btn" style="background:var(--danger); color:white; margin-top:15px" onclick="stopScanner()">Cancel</button>
+   </div>
+ </div>
+
+ <!-- HELP & SUPPORT MODAL -->
+ <div class="modal-overlay" id="helpModal">
+   <div class="modal-card" style="text-align: center;">
+     <h3 style="margin-bottom:15px; color: var(--accent);">🆘 Help & Support</h3>
+     <p style="font-size:14px; color:var(--text); line-height:1.5; margin-bottom:20px;">
+       Barcode scan, pricing, shape add karne ya app use karne mein problem ho to WhatsApp par contact karein.
+     </p>
+     <p style="font-size:16px; font-weight:700; margin-bottom:20px; color:var(--success);">📱 +91 8460393585</p>
+     <a href="https://wa.me/918460393585" target="_blank" style="text-decoration:none;">
+       <button class="btn btn-green">💬 WhatsApp Support</button>
+     </a>
+     <button class="btn" style="background:none; color:var(--label); margin-top:10px" onclick="closeModal('helpModal')">Close</button>
+   </div>
+ </div>
+
+ <!-- FOUNDER MODAL -->
+ <div class="modal-overlay" id="founderModal">
+   <div class="modal-card" style="text-align: center;">
+     <h3 style="margin-bottom:10px; color: var(--accent);">👤 Founder</h3>
+     <h2 style="margin-bottom:5px; color: var(--text);">Divyant Parmar</h2>
+     <p style="font-size:13px; color:var(--label); margin-bottom:20px;">Diamond Calculator / Diamond Manager</p>
+     <button class="btn" style="background:none; color:var(--label);" onclick="closeModal('founderModal')">Close</button>
+   </div>
+ </div>
+
+ <!-- MAIN APP INTERFACE -->
+ <div id="main-app">
+   <!-- TAB 1: ENTRY -->
+   <div id="entry" class="container active">
+     <h2 id="greeting-text">Hello 👋</h2>
+
+     <!-- ADSENSE UNIT PLACEHOLDER -->
+<div class="adsense-box" id="adsense-container">
+  <a href="https://your-contact-link.com" target="_blank" style="text-decoration: none; color: inherit;">
+    <!-- Image try karega load karne ki -->
+    <img 
+      src="./Sky Blue Orange and Cream Festive Janmashtami Banner_20260903_132310_0000.png" 
+      alt="Contact for Ads" 
+      style="width: 100%; height: auto; border-radius: 8px;"
+      onerror="this.style.display='none'; document.getElementById('adFallbackText').style.display='inline';" 
+    />
+    <!-- Agar image na mile ya na ho, toh ye text dikhega -->
+    <span id="adFallbackText" style="display: none;">જાહેરાત આપવા સંપર્ક કરો / Contact For Ads</span>
+  </a>
+</div>
+    
+
+     <div class="main-card">
+       <label class="input-label" for="barcode" data-i18n="packetNo">Packet Number</label>
+       <div class="input-group">
+         <input type="text" id="barcode" placeholder="# Barcode / Packet no." data-i18n-placeholder="packetPlaceholder">
+         <button class="scan-btn-inline" onclick="startScanner()" title="Scan Barcode">📷</button>
+       </div>
+
+       <span class="section-label" data-i18n="cut">Cut</span>
+       <div class="segment-container" id="cut-segments">
+         <button class="segment-btn active" onclick="setSegment('cut', 'Ex')">Ex</button>
+         <button class="segment-btn" onclick="setSegment('cut', 'VG')">VG</button>
+       </div>
+
+       <span class="section-label" data-i18n="shape">Shape</span>
+       <div class="segment-container" id="shape-segments"></div>
+
+       <div style="display:flex; gap:15px;">
+         <div style="flex:1;">
+           <label class="input-label" for="weight" data-i18n="weight">Weight (ct)</label>
+           <input type="number" id="weight" step="0.01" min="0.01" placeholder="0.00" oninput="lookupPrice()">
+         </div>
+         <div style="flex:1;">
+           <label class="input-label" for="price" data-i18n="rate">Rate / ct</label>
+           <input type="number" id="price" min="0" placeholder="₹ 0">
+         </div>
+       </div>
+       
+       <label class="input-label" for="entryDate" data-i18n="date">Date</label>
+       <input type="date" id="entryDate">
+       <button class="btn btn-green" onclick="saveStone()" data-i18n="saveStone">✓ Save Stone</button>
+     </div>
+   </div>
+
+   <!-- TAB 2: PRICES & SHAPES -->
+   <div id="prices" class="container">
+     <h2 data-i18n="priceRules">Price Rules</h2>
+     <div class="main-card">
+       <span class="section-label" data-i18n="addRate">Add New Rate</span>
+       <label class="input-label" data-i18n="dept">Department</label>
+       <div class="segment-container" id="grp-segments" style="margin-bottom:15px">
+         <button class="segment-btn active" onclick="setSegment('grp', 'Fancy')">Fancy</button>
+         <button class="segment-btn" onclick="setSegment('grp', 'Step Cut')">Step Cut</button>
+         <button class="segment-btn" onclick="setSegment('grp', 'Round')">Round</button>
+         <button class="segment-btn" onclick="setSegment('grp', 'Step Cut Fancy')">Step Cut Fancy</button>
+       </div>
+       <label class="input-label" data-i18n="cut">Cut</label>
+       <div class="segment-container" id="pcut-segments">
+         <button class="segment-btn active" onclick="setSegment('pcut', 'Ex')">Ex</button>
+         <button class="segment-btn" onclick="setSegment('pcut', 'VG')">VG</button>
+       </div>
+       <label class="input-label" data-i18n="weightRange">Weight Range (ct)</label>
+       <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px">
+         <input type="number" id="p_min" step="0.01" min="0" placeholder="Min" style="margin:0">
+         <span style="color:var(--label)">—</span>
+         <input type="number" id="p_max" step="0.01" min="0" placeholder="Max" style="margin:0">
+       </div>
+       <label class="input-label" for="p_amt" data-i18n="rate">Price per ct (₹)</label>
+       <input type="number" id="p_amt" min="0" placeholder="₹ 0">
+       <button class="btn btn-blue" onclick="savePriceRule()" data-i18n="saveRateBtn">+ Save Rate</button>
+     </div>
+
+     <div id="priceList" style="margin-bottom: 25px;"></div>
+
+     <h2 data-i18n="addShape">Add Shape</h2>
+     <div class="main-card">
+       <span class="section-label" data-i18n="newShape">New Custom Shape</span>
+       <label class="input-label" for="custom_shape_name" data-i18n="shapeName">Shape Name</label>
+       <input type="text" id="custom_shape_name" placeholder="e.g. Heart, Princess, Trillion">
+       
+       <label class="input-label" data-i18n="dept">Department</label>
+       <div class="segment-container" id="cshape-grp-segments" style="margin-bottom:15px">
+         <button class="segment-btn active" onclick="setSegment('cshape_grp', 'Fancy')">Fancy</button>
+         <button class="segment-btn" onclick="setSegment('cshape_grp', 'Step Cut')">Step Cut</button>
+         <button class="segment-btn" onclick="setSegment('cshape_grp', 'Round')">Round</button>
+         <button class="segment-btn" onclick="setSegment('cshape_grp', 'Step Cut Fancy')">Step Cut Fancy</button>
+       </div>
+
+       <button class="btn btn-blue" onclick="saveCustomShape()" data-i18n="addShapeBtn">+ Add Shape</button>
+     </div>
+
+     <div id="customShapeList"></div>
+   </div>
+
+   <!-- TAB 3: REPORTS -->
+   <div id="reports" class="container">
+     <h2 data-i18n="reports">Reports</h2>
+     <div class="summary-grid">
+       <div><h3 id="totCount" style="color:var(--accent)">0</h3><small data-i18n="stones">Stones</small></div>
+       <div><h3 id="totWt">0.00</h3><small data-i18n="totalCt">Total ct</small></div>
+       <div><h3 id="totVal" style="color:var(--success)">₹0</h3><small data-i18n="value">Value</small></div>
+     </div>
+     
+     <div style="display:flex; gap:10px; margin-bottom:20px;">
+       <input type="month" id="filterMonth" onchange="loadReports()" style="flex:2; border-radius:30px; padding:10px 20px; margin-bottom:0;">
+       <select id="sortOption" onchange="loadReports()" style="flex:1; border-radius:30px; padding:10px; margin-bottom:0; font-size: 14px;">
+         <option value="date">Date</option>
+         <option value="weight">Weight</option>
+         <option value="val">Value</option>
+       </select>
+     </div>
+
+     <div id="historyList"></div>
+   </div>
+
+   <!-- BOTTOM NAVIGATION -->
+   <div class="bottom-nav">
+     <div class="nav-item active" onclick="showTab('entry')"><span class="nav-icon">⊕</span><span data-i18n="navEntry">Entry</span></div>
+     <div class="nav-item" onclick="showTab('prices')"><span class="nav-icon">🏷</span><span data-i18n="navPrices">Prices</span></div>
+     <div class="nav-item" onclick="showTab('reports')"><span class="nav-icon">📊</span><span data-i18n="navReports">Reports</span></div>
+   </div>
+ </div>
+
+ <script>
+ // --- FULL APP I18N DICTIONARY ---
+ const i18n = {
+   en: {
+     appTitle: "DIAMOND CALCULATOR",
+     packetNo: "Packet Number",
+     packetPlaceholder: "# Barcode / Packet no.",
+     cut: "Cut",
+     shape: "Shape",
+     weight: "Weight (ct)",
+     rate: "Rate / ct",
+     date: "Date",
+     saveStone: "✓ Save Stone",
+     navEntry: "Entry",
+     navPrices: "Prices",
+     navReports: "Reports",
+     priceRules: "Price Rules",
+     addRate: "Add New Rate",
+     dept: "Department",
+     weightRange: "Weight Range (ct)",
+     saveRateBtn: "+ Save Rate",
+     addShape: "Add Shape",
+     newShape: "New Custom Shape",
+     shapeName: "Shape Name",
+     addShapeBtn: "+ Add Shape",
+     reports: "Reports",
+     stones: "Stones",
+     totalCt: "Total ct",
+     value: "Value",
+     settings: "Settings",
+     toggleTheme: "🌓 Change Theme",
+     about: "ℹ️ About",
+     privacy: "🔒 Privacy Policy",
+     terms: "📜 Terms & Conditions",
+     help: "🆘 Help & Support",
+     founder: "👤 Founder",
+     checkUpdate: "🔄 Check for Update",
+     logout: "🔴 Logout",
+     updateNotice: "New Update Available!",
+     updateBtn: "Update Now"
+   },
+   hi: {
+     appTitle: "डायमंड कैलकुलेटर",
+     packetNo: "पैकेट नंबर",
+     packetPlaceholder: "# बारकोड / पैकेट नं.",
+     cut: "कट",
+     shape: "शेप",
+     weight: "वजन (ct)",
+     rate: "रेट / ct",
+     date: "तारीख",
+     saveStone: "✓ स्टोन सेव करें",
+     navEntry: "एंट्री",
+     navPrices: "रेट लिस्ट",
+     navReports: "रिपोर्ट्स",
+     priceRules: "प्राइस रूल्स",
+     addRate: "नया रेट जोड़ें",
+     dept: "विभाग",
+     weightRange: "वजन रेंज (ct)",
+     saveRateBtn: "+ रेट सेव करें",
+     addShape: "शेप जोड़ें",
+     newShape: "नया कस्टम शेप",
+     shapeName: "शेप का नाम",
+     addShapeBtn: "+ शेप जोड़ें",
+     reports: "रिपोर्ट्स",
+     stones: "कुल स्टोन",
+     totalCt: "कुल वजन",
+     value: "कुल कीमत",
+     settings: "सेटिंग्स",
+     toggleTheme: "🌓 थीम बदलें",
+     about: "ℹ️ ऐप के बारे में",
+     privacy: "🔒 गोपनीयता नीति",
+     terms: "📜 नियम और शर्तें",
+     help: "🆘 मदद और सहायता",
+     founder: "👤 संस्थापक",
+     checkUpdate: "🔄 अपडेट चेक करें",
+     logout: "🔴 लॉग आउट",
+     updateNotice: "नया अपडेट उपलब्ध है!",
+     updateBtn: "अभी अपडेट करें"
+   },
+   gu: {
+     appTitle: "ડાયમંડ કેલ્ક્યુલેટર",
+     packetNo: "પેકેટ નંબર",
+     packetPlaceholder: "# બારકોડ / પેકેટ નં.",
+     cut: "કટ",
+     shape: "શેપ",
+     weight: "વજન (ct)",
+     rate: "રેટ / ct",
+     date: "તારીખ",
+     saveStone: "✓ સ્ટોન સેવ કરો",
+     navEntry: "એન્ટ્રી",
+     navPrices: "રેટ લિસ્ટ",
+     navReports: "રિપોર્ટ્સ",
+     priceRules: "પ્રાઇસ રૂલ્સ",
+     addRate: "નવો રેટ ઉમેરો",
+     dept: "ડિપાર્ટમેન્ટ",
+     weightRange: "વજન રેન્જ (ct)",
+     saveRateBtn: "+ રેટ સેવ કરો",
+     addShape: "શેપ ઉમેરો",
+     newShape: "નવો કસ્ટમ શેપ",
+     shapeName: "શેપનું નામ",
+     addShapeBtn: "+ શેપ ઉમેરો",
+     reports: "રિપોર્ટ્સ",
+     stones: "કુલ સ્ટોન",
+     totalCt: "કુલ વજન",
+     value: "કુલ કિંમત",
+     settings: "સેટિંગ્સ",
+     toggleTheme: "🌓 થીમ બદલો",
+     about: "ℹ️ એપ વિષે",
+     privacy: "🔒 પ્રાઈવસી પોલિસી",
+     terms: "📜 નિયમો અને શરતો",
+     help: "🆘 મદદ અને સપોર્ટ",
+     founder: "👤 સ્થાપક",
+     checkUpdate: "🔄 અપડેટ ચેક કરો",
+     logout: "🔴 લોગ આઉટ",
+     updateNotice: "નવું અપડેટ ઉપલબ્ધ છે!",
+     updateBtn: "અત્યારે અપડેટ કરો"
+   }
+ };
+
+ // --- SERVICE WORKER & AUTOMATIC UPDATE ENGINE ---
+ let newWorker;
+ if ('serviceWorker' in navigator) { 
+   navigator.serviceWorker.register('sw.js').then(reg => {
+     reg.addEventListener('updatefound', () => {
+       newWorker = reg.installing;
+       newWorker.addEventListener('statechange', () => {
+         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+           document.getElementById('update-banner').style.display = 'block';
+         }
+       });
+     });
+   }).catch(() => {}); 
+ }
+
+ async function applyUpdate() {
+   // 1. Unregister all service workers
+   if ('serviceWorker' in navigator) {
+     const registrations = await navigator.serviceWorker.getRegistrations();
+     for (let registration of registrations) {
+       await registration.unregister();
+     }
+   }
+   // 2. Clear all cache storage automatically
+   if ('caches' in window) {
+     const names = await caches.keys();
+     for (let name of names) {
+       await caches.delete(name);
+     }
+   }
+   // 3. Clear transient client storage while preserving language/theme preference
+   const savedLang = localStorage.getItem('appLang');
+   const savedTheme = localStorage.getItem('theme');
+   localStorage.clear();
+   if (savedLang) localStorage.setItem('appLang', savedLang);
+   if (savedTheme) localStorage.setItem('theme', savedTheme);
+
+   if (newWorker) newWorker.postMessage({ action: 'skipWaiting' });
+   
+   // 4. Force reload page from server bypassing cache
+   window.location.reload(true);
+ }
+
+ function checkUpdateManual() {
+   toggleMenu();
+   if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+     navigator.serviceWorker.getRegistration().then(reg => {
+       if (reg) {
+         reg.update().then(() => {
+           alert("Checked for updates. If a new version is available, the update banner will appear.");
+         });
+       }
+     });
+   } else {
+     applyUpdate();
+   }
+ }
+
+ // --- DYNAMIC USER GREETING & FULL LANGUAGE SYSTEM ---
+ function getUserFirstName() {
+   if (auth.currentUser && auth.currentUser.displayName) {
+     return auth.currentUser.displayName.split(' ')[0];
+   }
+   return "User";
+ }
+
+ function changeLanguage(langKey) {
+   if (langKey === 'add') {
+     const newLang = prompt("Enter new language name (e.g., Marathi, French):");
+     if (newLang) {
+       const select = document.getElementById('langSelect');
+       const opt = document.createElement('option');
+       opt.value = newLang.toLowerCase();
+       opt.innerHTML = `🌐 ${newLang}`;
+       select.insertBefore(opt, select.lastElementChild);
+       select.value = newLang.toLowerCase();
+       localStorage.setItem('appLang', newLang.toLowerCase());
+       applyFullLanguage(newLang.toLowerCase());
+     } else {
+       document.getElementById('langSelect').value = localStorage.getItem('appLang') || 'en';
+     }
+     return;
+   }
+   localStorage.setItem('appLang', langKey);
+   applyFullLanguage(langKey);
+ }
+
+ function applyFullLanguage(langKey) {
+   const userName = getUserFirstName();
+   const greetings = {
+     en: `Hello, ${userName} 👋`,
+     hi: `नमस्ते, ${userName} 👋`,
+     gu: `નમસ્તે, ${userName} 👋`
+   };
+   document.getElementById('greeting-text').innerText = greetings[langKey] || `Hello, ${userName} 👋`;
+
+   const langData = i18n[langKey] || i18n['en'];
+
+   document.querySelectorAll('[data-i18n]').forEach(el => {
+     const key = el.getAttribute('data-i18n');
+     if (langData[key]) el.innerText = langData[key];
+   });
+
+   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+     const key = el.getAttribute('data-i18n-placeholder');
+     if (langData[key]) el.placeholder = langData[key];
+   });
+ }
+
+ // --- FIREBASE INITIALIZATION ---
+ const firebaseConfig = { 
+   apiKey: "AIzaSyDz2EoEj_Q-P1cNvr0t_IBOA5xqmC1Wmzo", 
+   authDomain: "daimond-calculator.firebaseapp.com", 
+   projectId: "daimond-calculator", 
+   storageBucket: "daimond-calculator.firebasestorage.app", 
+   messagingSenderId: "1076337600089", 
+   appId: "1:1076337600089:web:dce0e8433eb4551c563348" 
+ };
+ firebase.initializeApp(firebaseConfig);
+ const auth = firebase.auth(), db = firebase.firestore();
+
+ // --- DEFAULT & USER STATE ---
+ const DEFAULT_SHAPES = [
+   { name: 'Oval', grp: 'Fancy' },
+   { name: 'Marquise', grp: 'Fancy' },
+   { name: 'Pear', grp: 'Fancy' },
+   { name: 'Round', grp: 'Round' },
+   { name: 'Radiant', grp: 'Step Cut' },
+   { name: 'Emerald', grp: 'Step Cut' },
+   { name: 'Cushion', grp: 'Step Cut' },
+   { name: 'Hexa', grp: 'Step Cut' },
+   { name: 'Step Pear', grp: 'Step Cut Fancy' },
+   { name: 'Step Marquise', grp: 'Step Cut Fancy' },
+   { name: 'Step Oval', grp: 'Step Cut Fancy' },
+   { name: 'Flame', grp: 'Step Cut Fancy' }
+ ];
+
+ let userShapes = [...DEFAULT_SHAPES];
+ let selectedValues = { shape: 'Oval', cut: 'Ex', grp: 'Fancy', pcut: 'Ex', cshape_grp: 'Fancy' };
+ let userPrices = [];
+ let html5QrcodeScanner = null;
+
+ function escapeHTML(str) {
+   return String(str || '').replace(/[&<>"']/g, function(m) {
+     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+   });
+ }
+
+ document.getElementById('entryDate').valueAsDate = new Date();
+ if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+ // --- NAVIGATION & MODALS ---
+ function toggleMenu() { 
+   document.getElementById('side-menu').classList.toggle('open'); 
+   document.getElementById('overlay').classList.toggle('active'); 
+ }
+
+ function toggleTheme() { 
+   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+   document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+   localStorage.setItem('theme', isDark ? 'light' : 'dark');
+ }
+
+ function openModal(id) {
+   if(document.getElementById('side-menu').classList.contains('open')) toggleMenu();
+   document.getElementById(id).classList.add('active');
+ }
+
+ function openHelpModal() { openModal('helpModal'); }
+ function openFounderModal() { openModal('founderModal'); }
+ function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
+
+ function showTab(id) {
+   document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
+   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+   document.getElementById(id).classList.add('active');
+   const index = id === 'entry' ? 0 : (id === 'prices' ? 1 : 2);
+   document.querySelectorAll('.nav-item')[index].classList.add('active');
+ }
+
+ // --- AUTHENTICATION ---
+ async function signInWithGoogle() {
+   const provider = new firebase.auth.GoogleAuthProvider();
+   try { await auth.signInWithPopup(provider); } catch(e) { alert(e.message); }
+ }
+
+ auth.onAuthStateChanged(async u => {
+   document.getElementById('auth-screen').style.display = u ? 'none' : 'flex';
+   document.getElementById('main-app').style.display = u ? 'block' : 'none';
+   if(u) { 
+     const savedLang = localStorage.getItem('appLang') || 'en';
+     document.getElementById('langSelect').value = savedLang;
+     applyFullLanguage(savedLang);
+
+     document.getElementById('filterMonth').value = new Date().toISOString().slice(0,7); 
+     await loadShapes();
+     await loadPrices(); 
+     loadReports(); 
+   }
+ });
+
+ // --- BARCODE SCANNER LOGIC ---
+ function startScanner() {
+   if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+     alert("Camera access requires a secure HTTPS connection.");
+     return;
+   }
+
+   document.getElementById('scannerModal').classList.add('active');
+   if (!html5QrcodeScanner) { html5QrcodeScanner = new Html5Qrcode("scanner-reader"); }
+
+   const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+   html5QrcodeScanner.start(
+     { facingMode: "environment" }, 
+     config, 
+     (decodedText) => {
+       document.getElementById('barcode').value = decodedText;
+       stopScanner();
+     },
+     () => {}
+   ).catch(err => {
+     alert("Camera permission is required to scan a barcode or camera is unavailable.");
+     stopScanner();
+   });
+ }
+
+ function stopScanner() {
+   if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+     html5QrcodeScanner.stop().then(() => {
+       document.getElementById('scannerModal').classList.remove('active');
+     }).catch(() => {
+       document.getElementById('scannerModal').classList.remove('active');
+     });
+   } else {
+     document.getElementById('scannerModal').classList.remove('active');
+   }
+ }
+
+ // --- SEGMENT CONTROLS & LOOKUP ---
+ function setSegment(key, val) {
+   selectedValues[key] = val;
+   let containerId = '';
+   if (key === 'grp') containerId = 'grp-segments';
+   else if (key === 'pcut') containerId = 'pcut-segments';
+   else if (key === 'shape') containerId = 'shape-segments';
+   else if (key === 'cut') containerId = 'cut-segments';
+   else if (key === 'cshape_grp') containerId = 'cshape-grp-segments';
+
+   if (containerId) {
+     document.querySelectorAll(`#${containerId} .segment-btn`).forEach(btn => { 
+       btn.classList.toggle('active', btn.innerText.trim() === val); 
+     });
+   }
+
+   if (key === 'shape' || key === 'cut') lookupPrice();
+ }
+
+ function getDepartmentForShape(shapeName) {
+   const found = userShapes.find(s => s.name.toLowerCase() === shapeName.toLowerCase());
+   return found ? found.grp : 'Step Cut';
+ }
+
+ function lookupPrice() {
+   const shp = selectedValues.shape;
+   const cut = selectedValues.cut;
+   const wt = parseFloat(document.getElementById('weight').value) || 0;
+   if (wt <= 0) return;
+
+   const grp = getDepartmentForShape(shp);
+   const match = userPrices.find(r => r.grp === grp && r.cut === cut && wt >= r.min && wt <= r.max);
+   if (match) document.getElementById('price').value = match.amt;
+ }
+
+ // --- SHAPES MANAGEMENT ---
+ async function loadShapes() {
+   if (!auth.currentUser) return;
+   const docRef = db.collection("users").doc(auth.currentUser.uid);
+   const snap = await docRef.get();
+   
+   userShapes = [...DEFAULT_SHAPES];
+   if (snap.exists && snap.data().customShapes) {
+     const customList = snap.data().customShapes || [];
+     customList.forEach(cs => {
+       if (!userShapes.some(s => s.name.toLowerCase() === cs.name.toLowerCase())) {
+         userShapes.push(cs);
+       }
+     });
+   }
+   renderShapeSegments();
+   renderCustomShapeList();
+ }
+
+ function renderShapeSegments() {
+   let html = '';
+   userShapes.forEach((s, idx) => {
+     const activeClass = (selectedValues.shape === s.name || (idx === 0 && !selectedValues.shape)) ? 'active' : '';
+     if (idx === 0 && !selectedValues.shape) selectedValues.shape = s.name;
+     html += `<button class="segment-btn ${activeClass}" onclick="setSegment('shape', '${escapeHTML(s.name)}')">${escapeHTML(s.name)}</button>`;
+   });
+   document.getElementById('shape-segments').innerHTML = html;
+ }
+
+ function renderCustomShapeList() {
+   const customOnly = userShapes.filter(s => !DEFAULT_SHAPES.some(d => d.name.toLowerCase() === s.name.toLowerCase()));
+   let html = '';
+   if (customOnly.length > 0) {
+     html += '<span class="section-label" style="margin-top:10px;">Custom Shapes</span>';
+     customOnly.forEach(s => {
+       html += `<div class="shape-list-item">
+         <span><b>${escapeHTML(s.name)}</b> (${escapeHTML(s.grp)})</span>
+         <button class="delete-shape-btn" onclick="deleteCustomShape('${escapeHTML(s.name)}')">✕ Delete</button>
+       </div>`;
+     });
+   }
+   document.getElementById('customShapeList').innerHTML = html;
+ }
+
+ async function saveCustomShape() {
+   const nameInput = document.getElementById('custom_shape_name');
+   const name = nameInput.value.trim();
+   const grp = selectedValues.cshape_grp || 'Fancy';
+
+   if (!name) return alert("Please enter a shape name.");
+   if (userShapes.some(s => s.name.toLowerCase() === name.toLowerCase())) return alert("Shape already exists.");
+
+   userShapes.push({ name, grp });
+   const customOnly = userShapes.filter(s => !DEFAULT_SHAPES.some(d => d.name.toLowerCase() === s.name.toLowerCase()));
+   await db.collection("users").doc(auth.currentUser.uid).set({ customShapes: customOnly }, { merge: true });
+
+   nameInput.value = '';
+   renderShapeSegments();
+   renderCustomShapeList();
+   alert("Shape added successfully!");
+ }
+
+ async function deleteCustomShape(shapeName) {
+   if (!confirm(`Delete custom shape "${shapeName}"?`)) return;
+
+   userShapes = userShapes.filter(s => s.name.toLowerCase() !== shapeName.toLowerCase());
+   const customOnly = userShapes.filter(s => !DEFAULT_SHAPES.some(d => d.name.toLowerCase() === s.name.toLowerCase()));
+
+   await db.collection("users").doc(auth.currentUser.uid).set({ customShapes: customOnly }, { merge: true });
+   if (selectedValues.shape === shapeName) selectedValues.shape = userShapes[0].name;
+
+   renderShapeSegments();
+   renderCustomShapeList();
+   lookupPrice();
+ }
+
+ // --- STONES ENTRY MANAGEMENT ---
+ async function saveStone() {
+   const s = { 
+     date: document.getElementById('entryDate').value, 
+     barcode: document.getElementById('barcode').value.trim() || "No ID", 
+     shape: selectedValues.shape, 
+     cut: selectedValues.cut, 
+     weight: parseFloat(document.getElementById('weight').value), 
+     price: parseFloat(document.getElementById('price').value), 
+     month: document.getElementById('entryDate').value.slice(0,7) 
+   };
+   
+   if (isNaN(s.weight) || s.weight <= 0) return alert("Please enter a valid weight.");
+   if (isNaN(s.price) || s.price < 0) return alert("Please enter a valid rate.");
+
+   await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(s);
+   document.getElementById('barcode').value = ''; 
+   document.getElementById('weight').value = '';
+   document.getElementById('price').value = '';
+   loadReports(); 
+   alert("Saved!");
+ }
+
+ // --- PRICE RULES MANAGEMENT ---
+ async function savePriceRule() {
+   const min = parseFloat(document.getElementById('p_min').value);
+   const max = parseFloat(document.getElementById('p_max').value);
+   const amt = parseFloat(document.getElementById('p_amt').value);
+   
+   if (isNaN(min) || isNaN(max) || isNaN(amt) || min > max) return alert("Please enter valid weight range and price amount.");
+
+   const overlap = userPrices.some(r => r.grp === selectedValues.grp && r.cut === selectedValues.pcut && ((min >= r.min && min < r.max) || (max > r.min && max <= r.max)));
+   if (overlap && !confirm("Warning: Range overlaps with an existing rule. Save anyway?")) return;
+
+   const r = { grp: selectedValues.grp, cut: selectedValues.pcut, min, max, amt };
+   await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(r);
+   
+   document.getElementById('p_min').value = '';
+   document.getElementById('p_max').value = '';
+   document.getElementById('p_amt').value = '';
+   loadPrices();
+ }
+
+ async function loadPrices() {
+   if (!auth.currentUser) return;
+   const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();
+   userPrices = []; 
+
+   snap.forEach(doc => { 
+     let r = doc.data(); 
+     r.id = doc.id;
+     userPrices.push(r); 
+   });
+
+   const departments = ['Fancy', 'Step Cut', 'Round', 'Step Cut Fancy'];
+   let h = '';
+
+   departments.forEach(dept => {
+     const rules = userPrices.filter(r => r.grp === dept);
+     h += `<div class="dept-card"><h3>${escapeHTML(dept)}</h3>`;
+     
+     if (rules.length === 0) {
+       h += `<p style="font-size:12px; color:var(--label)">No rate rules set for this department.</p>`;
+     } else {
+       rules.forEach(r => {
+         h += `<div class="report-item">
+           <div class="report-info">
+             <b>Cut: ${escapeHTML(r.cut)}</b>
+             <small>${r.min} - ${r.max} ct</small>
+           </div>
+           <div style="display:flex; align-items:center; gap:15px">
+             <b class="val-text">₹${r.amt}</b>
+             <span onclick="del('prices','${r.id}',loadPrices)" style="color:var(--danger); cursor:pointer">✕</span>
+           </div>
+         </div>`;
+       });
+     }
+     h += `</div>`;
+   });
+
+   document.getElementById('priceList').innerHTML = h;
+ }
+
+ // --- REPORTS MANAGEMENT ---
+ async function loadReports() {
+   if (!auth.currentUser) return;
+   const m = document.getElementById('filterMonth').value;
+   const sortVal = document.getElementById('sortOption').value;
+   const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones").where("month", "==", m).get();
+   
+   let stones = [];
+   snap.forEach(doc => { 
+     let s = doc.data(); 
+     s.id = doc.id; 
+     s.totalVal = s.weight * s.price;
+     stones.push(s); 
+   });
+
+   stones.sort((a, b) => {
+     if (sortVal === 'date') return new Date(b.date) - new Date(a.date);
+     if (sortVal === 'weight') return b.weight - a.weight;
+     if (sortVal === 'val') return b.totalVal - a.totalVal;
+     return 0;
+   });
+
+   let h = '', tC = 0, tW = 0, tV = 0;
+   stones.forEach(s => { 
+     tC++; tW += s.weight; tV += s.totalVal; 
+     h += `<div class="report-item">
+       <div class="report-info">
+         <b>#${escapeHTML(s.barcode)}</b>
+         <small>${escapeHTML(s.date)} • ${escapeHTML(s.shape)} • ${escapeHTML(s.cut)} • ${s.weight}ct @ ₹${s.price}</small>
+       </div>
+       <div style="text-align:right">
+         <div class="val-text" style="color:var(--success)">₹${s.totalVal.toLocaleString(undefined, {minimumFractionDigits: 1})}</div>
+         <span onclick="openEditModal('${s.id}','${escapeHTML(s.date)}','${escapeHTML(s.barcode)}',${s.weight},${s.price})" style="color:var(--accent); font-size:11px; cursor:pointer">EDIT</span>
+         <span onclick="del('stones','${s.id}',loadReports)" style="color:var(--danger); margin-left:10px; font-size:11px; cursor:pointer">DELETE</span>
+       </div>
+     </div>`; 
+   });
+
+   document.getElementById('totCount').innerText = tC; 
+   document.getElementById('totWt').innerText = tW.toFixed(2); 
+   document.getElementById('totVal').innerText = "₹" + tV.toLocaleString(undefined, {minimumFractionDigits: 1});
+   document.getElementById('historyList').innerHTML = h;
+ }
+
+ function openEditModal(id, date, barcode, weight, price) { 
+   document.getElementById('edit-id').value = id; 
+   document.getElementById('edit-date').value = date; 
+   document.getElementById('edit-barcode').value = barcode; 
+   document.getElementById('edit-weight').value = weight; 
+   document.getElementById('edit-price').value = price; 
+   document.getElementById('editModal').classList.add('active'); 
+ }
+
+ async function updateStone() { 
+   const id = document.getElementById('edit-id').value; 
+   const data = { 
+     date: document.getElementById('edit-date').value, 
+     barcode: document.getElementById('edit-barcode').value.trim() || "No ID", 
+     weight: parseFloat(document.getElementById('edit-weight').value), 
+     price: parseFloat(document.getElementById('edit-price').value), 
+     month: document.getElementById('edit-date').value.slice(0,7) 
+   }; 
+   if (isNaN(data.weight) || data.weight <= 0 || isNaN(data.price) || data.price < 0) {
+     return alert("Please enter valid weight and price values.");
+   }
+   await db.collection("users").doc(auth.currentUser.uid).collection("stones").doc(id).update(data); 
+   closeModal('editModal'); 
+   loadReports(); 
+ }
+
+ async function del(c, id, cb) { 
+   if(confirm("Delete record?")) { 
+     await db.collection("users").doc(auth.currentUser.uid).collection(c).doc(id).delete(); 
+     cb(); 
+   } 
+ }
+ </script>
+</body>
+</html>
+
+ /* LOGIN PAGE DESIGN */
+ #auth-screen {
+   background-color: #64748b; 
+   display: flex; flex-direction: column; align-items: center; justify-content: center;
+   height: 100vh; position: fixed; inset: 0; z-index: 9999; text-align: center; color: white;
+ }
+ .login-circle {
+   width: 110px; height: 110px; border: 2.5px solid #5eead4; border-radius: 50%;
+   display: flex; align-items: center; justify-content: center;
+   background: rgba(255,255,255,0.1); margin-bottom: 25px;
+ }
+ .login-title { font-size: 38px; letter-spacing: 5px; font-weight: 800; margin: 0; color: white; }
+ .login-subtitle { font-size: 13px; letter-spacing: 4px; color: #5eead4; text-transform: uppercase; margin-bottom: 15px; }
+ .login-gujarati { font-size: 16px; color: #e2e8f0; margin-bottom: 45px; opacity: 0.9; }
+ .google-btn { 
+   width: 85%; max-width: 320px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4); 
+   border-radius: 40px; padding: 15px; color: white; font-size: 18px; font-weight: 600; 
+   display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer;
+   backdrop-filter: blur(8px);
+ }
+ .g-icon-wrapper { background: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+
+ #auth-screen:not([style*="display: none"]) ~ .navbar { display: none; }
+
+ /* APP STYLES */
+ * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; transition: background 0.3s; }
+ body { background: var(--bg); color: var(--text); padding-bottom: 70px; }
+ .navbar { display: flex; background: var(--header-bg); color: var(--header-text); justify-content: space-between; align-items: center; padding: 0 20px; height: 60px; position: sticky; top: 0; z-index: 1000; }
+ .container { max-width: 500px; margin: 0 auto; padding: 20px; display: none; }
+ .container.active { display: block; }
+ h2 { font-size: 24px; margin-bottom: 20px; font-weight: 700; }
+ .main-card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+ .dept-card { background: var(--card); padding: 16px; border-radius: 14px; margin-bottom: 15px; border-left: 4px solid var(--accent); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+ .dept-card h3 { font-size: 16px; margin-bottom: 12px; color: var(--accent); }
+ .section-label { font-size: 11px; color: #fbbf24; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; display: block; }
+ .input-label { font-size: 10px; color: var(--label); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; display: block; }
+ input, select { width: 100%; padding: 14px; border: 1px solid var(--input-border); border-radius: 10px; margin-bottom: 20px; font-size: 16px; background: var(--input-bg); color: var(--text); outline: none; }
+ .segment-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+ .segment-btn { padding: 10px 14px; border-radius: 20px; border: none; background: var(--card-inner); color: var(--label); font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
+ .segment-btn.active { background: var(--accent); color: white; }
+ .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--header-bg); display: flex; height: 65px; border-top: 1px solid rgba(255,255,255,0.1); z-index: 1000; }
+ .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--label); cursor: pointer; font-size: 10px; gap: 4px; }
+ .nav-item.active { color: var(--accent); }
+ .nav-icon { font-size: 18px; }
+ .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+ .btn-green { background: var(--success); color: white; }
+ .btn-blue { background: var(--accent); color: white; }
+ .report-item { background: var(--card-inner); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+ .report-info b { font-size: 14px; display: block; margin-bottom: 2px; }
+ .report-info small { color: var(--label); font-size: 11px; }
+ .val-text { font-size: 16px; font-weight: 700; text-align: right; }
+ .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 20px; text-align: center; }
+ .summary-grid h3 { font-size: 20px; margin-bottom: 4px; }
+ .summary-grid small { color: var(--label); font-size: 11px; text-transform: uppercase; font-weight: 700; }
+ .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: var(--card); z-index: 2000; transition: 0.3s; padding: 25px; overflow-y: auto; }
+ .side-menu.open { right: 0; }
+ .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1500; }
+ .overlay.active { display: block; }
+ .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; align-items: center; justify-content: center; padding: 20px; }
+ .modal-overlay.active { display: flex; }
+ .modal-card { background: var(--card); width: 100%; max-width: 400px; padding: 25px; border-radius: 20px; max-height: 90vh; overflow-y: auto; }
+
+ /* UPDATE BANNER */
+ #update-banner { display: none; background: #3b82f6; color: white; text-align: center; padding: 12px; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; font-weight: 600; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+ #update-banner button { background: white; color: #3b82f6; border: none; padding: 6px 14px; margin-left: 10px; border-radius: 15px; cursor: pointer; font-weight: 700; }
+
+ /* ADSENSE HOLDER */
+ .adsense-box { width: 100%; min-height: 90px; background: var(--card-inner); border: 1px dashed var(--input-border); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--label); font-size: 12px; }
+
+ /* SCANNER UI */
+ #scanner-reader { width: 100%; background: #000; border-radius: 12px; overflow: hidden; }
+ .input-group { display: flex; gap: 8px; margin-bottom: 20px; }
+ .input-group input { margin-bottom: 0; flex: 1; }
+ .scan-btn-inline { padding: 0 16px; border-radius: 10px; border: 1px solid var(--input-border); background: var(--card-inner); color: var(--text); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+ .delete-shape-btn { margin-left: 4px; color: var(--danger); font-size: 11px; cursor: pointer; border: none; background: none; }
+ .shape-list-item { display: flex; justify-content: space-between; align-items: center; background: var(--card-inner); padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; }
  
         #app-loading {
             position: fixed;
