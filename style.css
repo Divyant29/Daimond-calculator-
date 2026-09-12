@@ -517,3 +517,24 @@ html:not([data-theme="dark"]) select option {
   background: #ffffff !important;
   color: #111827 !important;
 }
+/* shere button */
+.share-btn {
+  gap: 6px;
+  padding: 8px;
+  font-size: 17px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: inherit;
+}
+.shere-btn span{
+  font-weight: 500;
+}
+.share-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
