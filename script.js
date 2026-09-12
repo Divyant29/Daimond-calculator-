@@ -662,4 +662,25 @@
    cb(); 
   } 
  }
+// shere button
+ document.getElementById("shareAppBtn").addEventListener("click", async () => {
+  const shareData = {
+    title: "Diamond Calculator",
+    text: "💎 3x ના કારીગર ભાઈઓ માટે હીરાનો હિસાબ કરવાની FREE એપ!\n\nડાયરીમાં હિસાબ લખવાની ઝંઝટ ખતમ 📱\n\n👇🏻 એપ અહીંથી મેળવો:",
+    url: "https://divyant29.github.io/Daimond-calculator-/"
+  };
+
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+    } catch (error) {}
+  } else {
+    await navigator.clipboard.writeText(
+      shareData.text + "\n" + shareData.url
+    );
+    alert("Share link copy થઈ ગઈ છે ✅");
+  }
+});
+ 
+
  
