@@ -728,130 +728,78 @@ async function saveStone() {
     alert("Share link copy થઈ ગઈ છે ✅");
   }
 });
- // Export Csv
-// --- EXPORT CSV WITH FULL REPORT ---
-async function exportCSV() {
-  if (!auth.currentUser) {
-    alert("Please login first.");
-    return;
+// --- PDF REPORT EXPORT ---
+ function generatePDFReport() {
+  const btn = document.getElementById('pdfDownloadBtn');
+
+  if (!currentReportStones || currentReportStones.length === 0) {
+   alert("No data to export. Pick a month with saved stones first.");
+   return;
+  }
+  if (typeof window.jspdf === 'undefined') {
+   alert("PDF library failed to load. Check your internet connection and try again.");
+   return;
   }
 
-  const m = document.getElementById('filterMonth').value;
-  const searchVal = (document.getElementById('packetSearch')?.value || '')
-    .trim()
-    .toLowerCase();
+  if (btn) { btn.disabled = true; }
 
   try {
-    const snap = await db
-      .collection("users")
-      .doc(auth.currentUser.uid)
-      .collection("stones")
-      .where("month", "==", m)
-      .get();
+   const { jsPDF } = window.jspdf;
+   const doc = new jsPDF();
 
-    let stones = [];
+   const monthVal = document.getElementById('filterMonth').value;
+   const monthLabel = monthVal
+    ? new Date(monthVal + "-01").toLocaleString('default', { month: 'long', year: 'numeric' })
+    : "All Records";
 
-    snap.forEach(doc => {
-      const s = doc.data();
+   const tC = document.getElementById('totCount').innerText;
+   const tW = document.getElementById('totWt').innerText;
+   const tV = document.getElementById('totVal').innerText;
 
-      // Same packet search filter as Reports
-      if (
-        searchVal &&
-        !String(s.barcode || '').toLowerCase().includes(searchVal)
-      ) {
-        return;
-      }
+   // Header
+   doc.setFontSize(18);
+   doc.setTextColor(30, 41, 59);
+   doc.text("Diamond Calculator - Report", 14, 18);
 
-      const weight = Number(s.weight) || 0;
-      const price = Number(s.price) || 0;
-      const total = weight * price;
+   doc.setFontSize(11);
+   doc.setTextColor(100, 116, 139);
+   doc.text(`Period: ${monthLabel}`, 14, 26);
+   doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 32);
 
-      stones.push({
-        date: s.date || '',
-        barcode: s.barcode || '',
-        shape: s.shape || '',
-        cut: s.cut || '',
-        weight: weight,
-        price: price,
-        total: total
-      });
-    });
+   // Summary line
+   doc.setFontSize(11);
+   doc.setTextColor(15, 23, 42);
+   doc.text(`Stones: ${tC}     Total ct: ${tW}     Total Value: ${tV}`, 14, 42);
 
-    // Calculate full report
-    const totalStone = stones.length;
+   // Full data table
+   const rows = currentReportStones.map((s, i) => [
+    i + 1,
+    s.barcode || "No ID",
+    s.date || "",
+    s.shape || "",
+    s.cut || "",
+    s.weight != null ? s.weight.toFixed(2) : "",
+    s.price != null ? s.price.toLocaleString() : "",
+    s.totalVal != null ? s.totalVal.toLocaleString(undefined, { minimumFractionDigits: 1 }) : ""
+   ]);
 
-    const totalWeight = stones.reduce(
-      (sum, s) => sum + s.weight,
-      0
-    );
+   doc.autoTable({
+    startY: 48,
+    head: [["#", "Packet / Barcode", "Date", "Shape", "Cut", "Weight (ct)", "Rate", "Value"]],
+    body: rows,
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    columnStyles: { 0: { cellWidth: 8 } }
+   });
 
-    const totalWork = stones.reduce(
-      (sum, s) => sum + s.total,
-      0
-    );
-
-    // CSV header
-    let rows = [];
-
-    rows.push([
-      "Date",
-      "Packet",
-      "Shape",
-      "Cut",
-      "Weight (ct)",
-      "Rate / ct",
-      "Work"
-    ]);
-
-    // Individual entries
-    stones.forEach(s => {
-      rows.push([
-        s.date,
-        s.barcode,
-        s.shape,
-        s.cut,
-        s.weight.toFixed(2),
-        s.price.toFixed(2),
-        s.total.toFixed(2)
-      ]);
-    });
-
-    // Empty line
-    rows.push([]);
-
-    // FULL REPORT
-    rows.push(["FULL REPORT"]);
-    rows.push(["Total Stone", totalStone]);
-    rows.push(["Total Weight (ct)", totalWeight.toFixed(2)]);
-    rows.push(["Total Work", totalWork.toFixed(2)]);
-
-    // Convert to CSV
-    const csv = rows.map(row =>
-      row.map(value =>
-        `"${String(value ?? '').replace(/"/g, '""')}"`
-      ).join(",")
-    ).join("\n");
-
-    // Download
-    const blob = new Blob(
-      ["\uFEFF" + csv],
-      { type: "text/csv;charset=utf-8;" }
-    );
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = `diamond-report-${m || "all"}.csv`;
-
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    URL.revokeObjectURL(url);
-
-  } catch (error) {
-    console.error("CSV Export Error:", error);
-    alert("Export failed: " + error.message);
+   const fileMonth = monthVal || "all";
+   doc.save(`diamond-report-${fileMonth}.pdf`);
+  } catch (err) {
+   console.error("PDF generation failed:", err);
+   alert("Something went wrong while creating the PDF. Please try again.");
+  } finally {
+   if (btn) { btn.disabled = false; }
   }
-}
+ }
+
