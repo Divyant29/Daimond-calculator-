@@ -538,3 +538,18 @@ html:not([data-theme="dark"]) select option {
   height: 22px;
   fill: currentColor;
 }
+/* pdf btn */
+.icon-btn  {
+  color: currentColor;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  
+}
+.icon-btn svg {
+  width: 30px;
+  height: 30px;
+  fill:none;
+  stroke:currentColor;
+}
