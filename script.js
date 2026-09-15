@@ -1,5 +1,8 @@
- // --- FULL APP I18N DICTIONARY ---
- const i18n = {
+// Holds the currently displayed/filtered report data, used by generatePDFReport()
+ let currentReportStones = [];
+
+// --- FULL APP I18N DICTIONARY --
+const i18n = {
   en: {
    appTitle: "DIAMOND CALCULATOR",
    packetNo: "Packet Number",
@@ -653,7 +656,7 @@ async function saveStone() {
    if (sortVal === 'val') return b.totalVal - a.totalVal;
    return 0;
   });
-
+  currentReportStones = stones;
   let h = '', tC = 0, tW = 0, tV = 0;
   stones.forEach(s => { 
    tC++; tW += s.weight; tV += s.totalVal; 
