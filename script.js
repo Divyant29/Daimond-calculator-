@@ -655,7 +655,7 @@ async function saveStone() {
    if (sortVal === 'val') return b.totalVal - a.totalVal;
    return 0;
   });
-  
+  currentReportStones = stones;
   let h = '', tC = 0, tW = 0, tV = 0;
   stones.forEach(s => { 
    tC++; tW += s.weight; tV += s.totalVal; 
