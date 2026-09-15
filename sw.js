@@ -1,5 +1,5 @@
 // CHANGE THIS VERSION NUMBER EVERY TIME YOU PUSH TO GITHUB
-const CACHE_NAME = 'diamond-calc-v1.0.3'; 
+const CACHE_NAME = 'diamond-calc-v1.0.4'; 
 
 const ASSETS_TO_CACHE = [
   './',
