@@ -559,7 +559,7 @@ async function saveStone() {
     document.getElementById('weight').value = '';
     document.getElementById('price').value = '';
     loadReports();
-    alert("Saved!");
+    alert(navigator.onLine?"Saved!" : "Saved offline! / ઇન્ટરનેટ આવશે એટલે આપોઆપ અપડેટ થઈ જશે");
   } finally {
     btn.disabled = false;
     btn.innerText = originalText;
