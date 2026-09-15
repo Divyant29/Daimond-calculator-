@@ -756,7 +756,7 @@ async function saveStone() {
 
    const tC = document.getElementById('totCount').innerText;
    const tW = document.getElementById('totWt').innerText;
-   const tV = document.getElementById('totVal').innerText;
+   const tV = document.getElementById('totVal').innerText.replace('₹', 'Rs. ');
 
    // Header
    doc.setFontSize(18);
@@ -771,7 +771,7 @@ async function saveStone() {
    // Summary line
    doc.setFontSize(11);
    doc.setTextColor(15, 23, 42);
-   doc.text(`Stones: ${tC}     Total ct: ${tW}     Total Value: ${tV}`, 14, 42);
+   doc.text(`Stones: ${tC}     Total ct: ${tW}     Total Value: ${tV}`, 14, 39);
 
    // Full data table
    const rows = currentReportStones.map((s, i) => [
@@ -786,13 +786,13 @@ async function saveStone() {
    ]);
 
    doc.autoTable({
-    startY: 48,
+    startY: 45,
     head: [["#", "Packet / Barcode", "Date", "Shape", "Cut", "Weight (ct)", "Rate", "Value"]],
     body: rows,
     styles: { fontSize: 9, cellPadding: 3 },
     headStyles: { fillColor: [59, 130, 246], textColor: 255 },
     alternateRowStyles: { fillColor: [248, 250, 252] },
-    columnStyles: { 0: { cellWidth: 8 } }
+    columnStyles: { 0: { cellWidth: 12, halign:'center' } }
    });
 
    const fileMonth = monthVal || "all";
