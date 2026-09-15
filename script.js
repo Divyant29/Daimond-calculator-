@@ -291,20 +291,37 @@ async function syncOfflineStones() {
   for (const stone of pending) {
     try {
       const copy = { ...stone };
+      const localId = copy.localId;
+
+      // Remove local-only ID before uploading
       delete copy.localId;
 
+      // Upload to Firebase
       await ref.add(copy);
-    } catch (e) {
-      console.warn("Stone sync failed:", e);
+
+      // IMPORTANT:
+      // Remove this stone from localStones after successful upload
+      const localStones = getOfflineData('localStones', []);
+
+      const updatedLocalStones = localStones.filter(
+        s => s.localId !== localId
+      );
+
+      setOfflineData('localStones', updatedLocalStones);
+
+    } catch (error) {
+      console.warn("Stone sync failed:", error);
+
+      // Keep it pending so it can try again later
       remaining.push(stone);
     }
   }
 
+  // Keep only stones that failed
   setOfflineData('pendingStones', remaining);
 
-  if (remaining.length === 0) {
-    loadReports();
-  }
+  // Reload report
+  await loadReports();
 }
 window.addEventListener('online', () => {
   syncOfflineStones();
