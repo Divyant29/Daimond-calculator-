@@ -1,5 +1,5 @@
 
-
+let currentReportStones = [];
 // --- FULL APP I18N DICTIONARY --
 const i18n = {
   en: {
