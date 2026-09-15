@@ -1,11 +1,16 @@
 // CHANGE THIS VERSION NUMBER EVERY TIME YOU PUSH TO GITHUB
-const CACHE_NAME = 'diamond-calc-v1.0.1'; 
+const CACHE_NAME = 'diamond-calc-v1.0.2'; 
 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './style.css',
+  './script.js',
   './manifest.json',
-  './icon.png'
+  './icon.png',
+  './banner.png',
+  './dark-bg.png',
+  './light-bg.png'
 ];
 
 // Install Event - Cache App Shell
