@@ -243,88 +243,13 @@ const i18n = {
  };
  firebase.initializeApp(firebaseConfig);
  const auth = firebase.auth(), db = firebase.firestore();
-db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+ db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
   if (err.code === 'failed-precondition') {
+    // Multiple tabs open — persistence only works in one at a time
     console.warn('Offline persistence unavailable: multiple tabs open');
   } else if (err.code === 'unimplemented') {
     console.warn('Offline persistence not supported by this browser');
   }
-});
-
-// ================= OFFLINE DATA BACKUP =================
-
-function offlineKey(name) {
-  if (!auth.currentUser) return `diamondCalc_guest_${name}`;
-  return `diamondCalc_${auth.currentUser.uid}_${name}`;
-}
-
-function getOfflineData(name, fallback = []) {
-  try {
-    return JSON.parse(localStorage.getItem(offlineKey(name))) || fallback;
-  } catch (e) {
-    return fallback;
-  }
-}
-
-function setOfflineData(name, data) {
-  try {
-    localStorage.setItem(offlineKey(name), JSON.stringify(data));
-  } catch (e) {
-    console.error("Offline storage error:", e);
-  }
-}
-
-// Sync stones when internet comes back
-async function syncOfflineStones() {
-  if (!navigator.onLine || !auth.currentUser) return;
-
-  const pending = getOfflineData('pendingStones', []);
-
-  if (!pending.length) return;
-
-  const ref = db.collection("users")
-    .doc(auth.currentUser.uid)
-    .collection("stones");
-
-  const remaining = [];
-
-  for (const stone of pending) {
-    try {
-      const copy = { ...stone };
-      const localId = copy.localId;
-
-      // Remove local-only ID before uploading
-      delete copy.localId;
-
-      // Upload to Firebase
-      await ref.add(copy);
-
-      // IMPORTANT:
-      // Remove this stone from localStones after successful upload
-      const localStones = getOfflineData('localStones', []);
-
-      const updatedLocalStones = localStones.filter(
-        s => s.localId !== localId
-      );
-
-      setOfflineData('localStones', updatedLocalStones);
-
-    } catch (error) {
-      console.warn("Stone sync failed:", error);
-
-      // Keep it pending so it can try again later
-      remaining.push(stone);
-    }
-  }
-
-  // Keep only stones that failed
-  setOfflineData('pendingStones', remaining);
-
-  // Reload report
-  await loadReports();
-}
-window.addEventListener('online', () => {
-  syncOfflineStones();
 });
 
  // --- DEFAULT & USER STATE ---
@@ -610,9 +535,7 @@ window.addEventListener('online', () => {
  // --- STONES ENTRY MANAGEMENT ---
 async function saveStone() {
   const btn = document.querySelector('#entry .btn-green');
-
-  if (btn.disabled) return;
-
+  if (btn.disabled) return; // guard against double-tap
   btn.disabled = true;
   const originalText = btn.innerText;
   btn.innerText = "Saving...";
@@ -628,352 +551,132 @@ async function saveStone() {
       month: document.getElementById('entryDate').value.slice(0,7)
     };
 
-    if (isNaN(s.weight) || s.weight <= 0) {
-      alert("Please enter a valid weight.");
-      return;
-    }
+    if (isNaN(s.weight) || s.weight <= 0) { alert("Please enter a valid weight."); return; }
+    if (isNaN(s.price) || s.price < 0) { alert("Please enter a valid rate."); return; }
 
-    if (isNaN(s.price) || s.price < 0) {
-      alert("Please enter a valid rate.");
-      return;
-    }
-
-    // ================= OFFLINE =================
-    if (!navigator.onLine) {
-
-      s.localId = "offline_" + Date.now() + "_" + Math.random()
-        .toString(36)
-        .substring(2, 8);
-
-      const pending = getOfflineData('pendingStones', []);
-      pending.push(s);
-      setOfflineData('pendingStones', pending);
-
-      // Also keep a local copy for offline reports
-      const localStones = getOfflineData('localStones', []);
-      localStones.push(s);
-      setOfflineData('localStones', localStones);
-
-      document.getElementById('barcode').value = '';
-      document.getElementById('weight').value = '';
-      document.getElementById('price').value = '';
-
-      await loadReports();
-
-      alert("Saved offline! It will sync automatically when internet returns.");
-      return;
-    }
-
-    // ================= ONLINE =================
-    const savePromise =db.collection("users")
-      .doc(auth.currentUser.uid)
-      .collection("stones")
-      .add(s);
-   await Promise.race([
-      savePromise,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firebase timeout")), 5000)
-   )
-  ]);
-    // Keep local backup too
-    const localStones = getOfflineData('localStones', []);
-    localStones.push(s);
-    setOfflineData('localStones', localStones);
-
+    await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(s);
     document.getElementById('barcode').value = '';
     document.getElementById('weight').value = '';
     document.getElementById('price').value = '';
-
-    await loadReports();
-
-    alert("Saved!");
-
-  } catch (error) {
-
-    console.error("Save error:", error);
-
-    // If Firebase fails, save locally instead
-    const pending = getOfflineData('pendingStones', []);
-
-    const fallbackStone = {
-      date: document.getElementById('entryDate').value,
-      barcode: document.getElementById('barcode').value.trim() || "No ID",
-      shape: selectedValues.shape,
-      cut: selectedValues.cut,
-      weight: parseFloat(document.getElementById('weight').value),
-      price: parseFloat(document.getElementById('price').value),
-      month: document.getElementById('entryDate').value.slice(0,7),
-      localId: "offline_" + Date.now()
-    };
-
-    pending.push(fallbackStone);
-    setOfflineData('pendingStones', pending);
-
-    const localStones = getOfflineData('localStones', []);
-    localStones.push(fallbackStone);
-    setOfflineData('localStones', localStones);
-
-    await loadReports();
-
-    alert("Saved offline. It will sync when internet returns.");
-
+    loadReports();
+    alert(navigator.onLine?"Saved!" : "Saved offline! / ઇન્ટરનેટ આવશે એટલે આપોઆપ અપડેટ થઈ જશે");
   } finally {
-    // VERY IMPORTANT
     btn.disabled = false;
     btn.innerText = originalText;
   }
 }
+
  // --- PRICE RULES MANAGEMENT ---
+ async function savePriceRule() {
+  const min = parseFloat(document.getElementById('p_min').value);
+  const max = parseFloat(document.getElementById('p_max').value);
+  const amt = parseFloat(document.getElementById('p_amt').value);
+  
+  if (isNaN(min) || isNaN(max) || isNaN(amt) || min > max) return alert("Please enter valid weight range and price amount.");
+
+  const overlap = userPrices.some(r => r.grp === selectedValues.grp && r.cut === selectedValues.pcut && ((min >= r.min && min < r.max) || (max > r.min && max <= r.max)));
+  if (overlap && !confirm("Warning: Range overlaps with an existing rule. Save anyway?")) return;
+
+  const r = { grp: selectedValues.grp, cut: selectedValues.pcut, min, max, amt };
+  await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(r);
+  
+  document.getElementById('p_min').value = '';
+  document.getElementById('p_max').value = '';
+  document.getElementById('p_amt').value = '';
+  loadPrices();
+ }
+
  async function loadPrices() {
   if (!auth.currentUser) return;
+  const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();
+  userPrices = []; 
 
-  try {
+  snap.forEach(doc => { 
+   let r = doc.data(); 
+   r.id = doc.id;
+   userPrices.push(r); 
+  });
+  
 
-    // ================= OFFLINE =================
-    if (!navigator.onLine) {
-      userPrices = getOfflineData('prices', []);
-      renderPriceList();
-      return;
-    }
-
-    // ================= ONLINE =================
-    const snap = await db.collection("users")
-      .doc(auth.currentUser.uid)
-      .collection("prices")
-      .get();
-
-    userPrices = [];
-
-    snap.forEach(doc => {
-      let r = doc.data();
-      r.id = doc.id;
-      userPrices.push(r);
-    });
-
-    // Save prices for offline use
-    setOfflineData('prices', userPrices);
-
-    renderPriceList();
-
-  } catch (error) {
-
-    console.warn("Using offline prices:", error);
-
-    userPrices = getOfflineData('prices', []);
-
-    renderPriceList();
-  }
-}
-
-
-function renderPriceList() {
-
-  const departments = [
-    'Fancy',
-    'Step Cut',
-    'Round',
-    'Step Cut Fancy'
-  ];
-
+  const departments = ['Fancy', 'Step Cut', 'Round', 'Step Cut Fancy'];
   let h = '';
 
   departments.forEach(dept => {
-
-    const rules = userPrices.filter(r => r.grp === dept);
-
-    h += `<div class="dept-card"><h3>${escapeHTML(dept)}</h3>`;
-
-    if (rules.length === 0) {
-
-      h += `<p style="font-size:12px; color:var(--label)">
-        No rate rules set for this department.
-      </p>`;
-
-    } else {
-
-      rules.forEach(r => {
-
-        h += `<div class="report-item">
-
-          <div class="report-info">
-            <b>Cut: ${escapeHTML(r.cut)}</b>
-            <small>${r.min} - ${r.max} ct</small>
-          </div>
-
-          <div style="display:flex; align-items:center; gap:15px">
-            <b class="val-text">₹${r.amt}</b>
-
-            <span onclick="del('prices','${r.id}',loadPrices)"
-              style="color:var(--danger); cursor:pointer">
-              ✕
-            </span>
-          </div>
-
-        </div>`;
-      });
-    }
-
-    h += `</div>`;
+   const rules = userPrices.filter(r => r.grp === dept);
+   h += `<div class="dept-card"><h3>${escapeHTML(dept)}</h3>`;
+   
+   if (rules.length === 0) {
+    h += `<p style="font-size:12px; color:var(--label)">No rate rules set for this department.</p>`;
+   } else {
+    rules.forEach(r => {
+     h += `<div class="report-item">
+      <div class="report-info">
+       <b>Cut: ${escapeHTML(r.cut)}</b>
+       <small>${r.min} - ${r.max} ct</small>
+      </div>
+      <div style="display:flex; align-items:center; gap:15px">
+       <b class="val-text">₹${r.amt}</b>
+       <span onclick="del('prices','${r.id}',loadPrices)" style="color:var(--danger); cursor:pointer">✕</span>
+      </div>
+     </div>`;
+    });
+   }
+   h += `</div>`;
   });
 
   document.getElementById('priceList').innerHTML = h;
-}
- // --- REPORTS MANAGEMENT ---
-async function loadReports() {
-  if (!auth.currentUser) return;
+ }
 
+ // --- REPORTS MANAGEMENT ---
+ async function loadReports() {
+  if (!auth.currentUser) return;
   const m = document.getElementById('filterMonth').value;
   const sortVal = document.getElementById('sortOption').value;
   const searchVal = document.getElementById('packetSearch').value.trim().toLowerCase();
-
+  const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones").where("month", "==", m).get();
+  
   let stones = [];
-
-  // ================= FIREBASE DATA =================
-
-  if (navigator.onLine) {
-
-    try {
-
-      const snap = await db.collection("users")
-        .doc(auth.currentUser.uid)
-        .collection("stones")
-        .where("month", "==", m)
-        .get();
-
-      snap.forEach(doc => {
-
-        let s = doc.data();
-
-        s.id = doc.id;
-        s.totalVal = s.weight * s.price;
-
-        stones.push(s);
-      });
-
-    } catch (error) {
-      console.warn("Firebase reports unavailable:", error);
-    }
-  }
-
-  // ================= LOCAL DATA =================
-
-  const localStones = getOfflineData('localStones', []);
-
-  localStones.forEach(s => {
-
-    if (s.month !== m) return;
-
-    // Don't duplicate records that Firebase already has
-    if (s.localId && stones.some(x => x.localId === s.localId)) {
-      return;
-    }
-
-    s.totalVal = s.weight * s.price;
-
-    stones.push(s);
+  snap.forEach(doc => { 
+   let s = doc.data(); 
+   s.id = doc.id; 
+   s.totalVal = s.weight * s.price;
+   stones.push(s); 
   });
-
-  // ================= FILTER =================
-
+  // Filter by packet number / barcode
   if (searchVal) {
-
-    stones = stones.filter(s =>
-      String(s.barcode || '')
-        .toLowerCase()
-        .includes(searchVal)
-    );
+  stones = stones.filter(s =>
+    String(s.barcode || '').toLowerCase().includes(searchVal)
+  );
   }
-
-  // ================= SORT =================
 
   stones.sort((a, b) => {
-
-    if (sortVal === 'date')
-      return new Date(b.date) - new Date(a.date);
-
-    if (sortVal === 'weight')
-      return b.weight - a.weight;
-
-    if (sortVal === 'val')
-      return b.totalVal - a.totalVal;
-
-    return 0;
+   if (sortVal === 'date') return new Date(b.date) - new Date(a.date);
+   if (sortVal === 'weight') return b.weight - a.weight;
+   if (sortVal === 'val') return b.totalVal - a.totalVal;
+   return 0;
   });
-
   currentReportStones = stones;
-
-  let h = '';
-  let tC = 0;
-  let tW = 0;
-  let tV = 0;
-
-  stones.forEach(s => {
-
-    tC++;
-    tW += s.weight;
-    tV += s.totalVal;
-
-    const id = s.id || s.localId;
-
-    h += `<div class="report-item">
-
-      <div class="report-info">
-        <b>#${escapeHTML(s.barcode)}</b>
-
-        <small>
-          ${escapeHTML(s.date)}
-          • ${escapeHTML(s.shape)}
-          • ${escapeHTML(s.cut)}
-          • ${s.weight}ct @ ₹${s.price}
-        </small>
-      </div>
-
-      <div style="text-align:right">
-
-        <div class="val-text"
-          style="color:var(--success)">
-          ₹${s.totalVal.toLocaleString(undefined, {
-            minimumFractionDigits: 1
-          })}
-        </div>
-
-        ${s.id ? `
-        <span onclick="openEditModal(
-          '${s.id}',
-          '${escapeHTML(s.date)}',
-          '${escapeHTML(s.barcode)}',
-          ${s.weight},
-          ${s.price}
-        )"
-        style="color:var(--accent); font-size:11px; cursor:pointer">
-          EDIT
-        </span>
-
-        <span onclick="del('stones','${s.id}',loadReports)"
-        style="color:var(--danger); margin-left:10px; font-size:11px">
-          DELETE
-        </span>
-        ` : `
-        <small style="color:var(--accent)">
-          OFFLINE
-        </small>
-        `}
-
-      </div>
-
-    </div>`;
+  let h = '', tC = 0, tW = 0, tV = 0;
+  stones.forEach(s => { 
+   tC++; tW += s.weight; tV += s.totalVal; 
+   h += `<div class="report-item">
+    <div class="report-info">
+     <b>#${escapeHTML(s.barcode)}</b>
+     <small>${escapeHTML(s.date)} • ${escapeHTML(s.shape)} • ${escapeHTML(s.cut)} • ${s.weight}ct @ ₹${s.price}</small>
+    </div>
+    <div style="text-align:right">
+     <div class="val-text" style="color:var(--success)">₹${s.totalVal.toLocaleString(undefined, {minimumFractionDigits: 1})}</div>
+     <span onclick="openEditModal('${s.id}','${escapeHTML(s.date)}','${escapeHTML(s.barcode)}',${s.weight},${s.price})" style="color:var(--accent); font-size:11px; cursor:pointer">EDIT</span>
+     <span onclick="del('stones','${s.id}',loadReports)" style="color:var(--danger); margin-left:10px; font-size:11px; cursor:pointer">DELETE</span>
+    </div>
+   </div>`; 
   });
 
-  document.getElementById('totCount').innerText = tC;
-  document.getElementById('totWt').innerText = tW.toFixed(2);
-
-  document.getElementById('totVal').innerText =
-    "₹" + tV.toLocaleString(undefined, {
-      minimumFractionDigits: 1
-    });
-
+  document.getElementById('totCount').innerText = tC; 
+  document.getElementById('totWt').innerText = tW.toFixed(2); 
+  document.getElementById('totVal').innerText = "₹" + tV.toLocaleString(undefined, {minimumFractionDigits: 1});
   document.getElementById('historyList').innerHTML = h;
-}
+ }
 
  function openEditModal(id, date, barcode, weight, price) { 
   document.getElementById('edit-id').value = id; 
