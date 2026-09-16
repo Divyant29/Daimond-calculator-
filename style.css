@@ -284,7 +284,6 @@ body::before {
 /* Keep app content above the background layer */
 .navbar,
 #main-app,
-.modal-overlay,
 #update-banner {
   position: relative;
   z-index: 1;
