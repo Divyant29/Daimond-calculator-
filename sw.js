@@ -1,5 +1,5 @@
 // CHANGE THIS VERSION NUMBER EVERY TIME YOU PUSH TO GITHUB
-const CACHE_NAME = 'diamond-calc-v1.0.6'; 
+const CACHE_NAME = 'diamond-calc-v1.0.7';
 
 const ASSETS_TO_CACHE = [
   './',
@@ -13,11 +13,30 @@ const ASSETS_TO_CACHE = [
   './light-bg.png'
 ];
 
-// Install Event - Cache App Shell
+// External CDN libraries the app depends on — must be cached too,
+// otherwise the app breaks offline (Firebase, PDF export, barcode scanner)
+const CDN_ASSETS_TO_CACHE = [
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js',
+  'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
+];
+
+// Install Event - Cache App Shell + CDN libraries
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await cache.addAll(ASSETS_TO_CACHE);
+      // Cache CDN assets individually so one failed fetch doesn't block the rest
+      await Promise.all(
+        CDN_ASSETS_TO_CACHE.map((url) =>
+          fetch(url, { mode: 'cors' })
+            .then((res) => res.ok && cache.put(url, res))
+            .catch(() => {})
+        )
+      );
     })
   );
 });
