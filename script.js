@@ -1,3 +1,57 @@
+// --- PREMIUM TOAST MESSAGES (replaces alert) ---
+const TOAST_ICONS = {
+  success: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  error:   '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.6v.01"/></svg>',
+  warning: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.2l9 15.6H3z"/><path d="M12 10v4.4"/><path d="M12 17.4v.01"/></svg>',
+  info:    '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6v.01"/></svg>',
+  offline: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>'
+};
+const TOAST_MIN_TIME = { success: 2600, info: 3200, warning: 3600, error: 4500, offline: 4200 };
+
+function removeToast(el, instant) {
+  if (!el || el._gone) return;
+  el._gone = true;
+  clearTimeout(el._timer);
+  if (instant) { el.remove(); return; }
+  el.classList.remove('show');
+  el.classList.add('hide');
+  setTimeout(() => el.remove(), 260);
+}
+
+// type: 'success' | 'error' | 'warning' | 'info' | 'offline'
+function showToast(message, type, duration) {
+  type = TOAST_ICONS[type] ? type : 'info';
+  const text = String(message == null ? '' : message);
+
+  let root = document.getElementById('toast-root');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'toast-root';
+    root.setAttribute('aria-live', 'polite');
+    document.body.appendChild(root);
+  }
+
+  // same message already on screen? replace it instead of stacking copies
+  Array.from(root.children).forEach(t => { if (t.dataset.msg === text) removeToast(t, true); });
+  // keep at most 3 on screen
+  while (root.children.length >= 3) removeToast(root.firstElementChild, true);
+
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.dataset.msg = text;
+  el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  el.innerHTML = '<span class="toast-icon">' + TOAST_ICONS[type] + '</span><span class="toast-text"></span><span class="toast-bar"></span>';
+  el.querySelector('.toast-text').textContent = text; // textContent: safe even if the message has HTML
+
+  const ms = duration || Math.min(7000, Math.max(TOAST_MIN_TIME[type], text.length * 55));
+  el.querySelector('.toast-bar').style.animationDuration = ms + 'ms';
+  el.addEventListener('click', () => removeToast(el)); // tap to dismiss
+
+  root.appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+  el._timer = setTimeout(() => removeToast(el), ms);
+}
+
 
 let currentReportStones = [];
 // --- FULL APP I18N DICTIONARY --
@@ -101,7 +155,7 @@ const i18n = {
 
  async function installApp() {
   if (!deferredInstallPrompt) {
-   alert("To install: tap the Share button in your browser, then 'Add to Home Screen'.");
+   showToast("To install: tap the Share button in your browser, then 'Add to Home Screen'.", 'info', 6000);
    return;
   }
   deferredInstallPrompt.prompt();
@@ -142,6 +196,7 @@ const i18n = {
  });
  window.addEventListener('online', () => {
   document.getElementById('update-banner').style.display = 'none';
+  prefetchAllStones();
  });
 
  async function applyUpdate() {
@@ -173,7 +228,7 @@ const i18n = {
    navigator.serviceWorker.getRegistration().then(reg => {
     if (reg) {
      reg.update().then(() => {
-      alert("Checked for updates. If a new version is available, the update banner will appear.");
+      showToast("Checked for updates. If a new version is available, the update banner will appear.", 'info');
      });
     }
    });
@@ -243,6 +298,7 @@ const i18n = {
  };
  firebase.initializeApp(firebaseConfig);
  const auth = firebase.auth(), db = firebase.firestore();
+ try { db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED }); } catch (e) { console.warn(e); } // keep ALL saved entries on the phone
  db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
   if (err.code === 'failed-precondition') {
     // Multiple tabs open — persistence only works in one at a time
@@ -251,6 +307,45 @@ const i18n = {
     console.warn('Offline persistence not supported by this browser');
   }
 });
+
+ // --- OFFLINE-SAFE FIRESTORE HELPERS ---
+ // Firestore only "resolves" a write once the SERVER confirms it, which never happens
+ // offline. So we don't wait for it: the write is stored on the phone immediately and is
+ // sent automatically when the internet comes back (offline persistence is enabled above).
+ function fireWrite(promise) {
+  promise.catch(err => {
+   console.error('Firestore write failed:', err);
+   showToast('Sync error: ' + (err && err.message ? err.message : err), 'error');
+  });
+ }
+
+ // Reads: use the server when online; if offline (or the network is too slow), use the local copy.
+ async function fsGet(ref) {
+  if (!navigator.onLine) return ref.get({ source: 'cache' });
+  try {
+   return await Promise.race([
+    ref.get(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+   ]);
+  } catch (e) {
+   return ref.get({ source: 'cache' });
+  }
+ }
+
+ // Downloads EVERY entry once (in the background) so all months open offline.
+ // Runs at most once per 24 hours, so Firebase reads stay low.
+ async function prefetchAllStones() {
+  try {
+   if (!auth.currentUser || !navigator.onLine) return;
+   const key = 'lastPrefetch_' + auth.currentUser.uid;
+   const last = parseInt(localStorage.getItem(key) || '0', 10);
+   if (Date.now() - last < 24 * 60 * 60 * 1000) return;
+   await db.collection("users").doc(auth.currentUser.uid).collection("stones").get({ source: 'server' });
+   localStorage.setItem(key, String(Date.now()));
+  } catch (e) {
+   console.warn('Background download of entries failed (will retry later):', e);
+  }
+ }
 
  // --- DEFAULT & USER STATE ---
  const DEFAULT_SHAPES = [
@@ -326,7 +421,7 @@ const i18n = {
  // --- AUTHENTICATION ---
    async function signInWithGoogle() {
    const provider = new firebase.auth.GoogleAuthProvider();
-   try { await auth.signInWithPopup(provider); } catch(e) { alert(e.message); }
+   try { await auth.signInWithPopup(provider); } catch(e) { showToast(e.message, 'error'); }
 }
 
   auth.onAuthStateChanged(async u => {
@@ -342,13 +437,14 @@ const i18n = {
    await loadShapes();
    await loadPrices(); 
    loadReports(); 
+   prefetchAllStones(); // background: keep every month available offline
   }
   })
   
  // --- BARCODE SCANNER LOGIC ---
  function startScanner() {
   if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-   alert("Camera access requires a secure HTTPS connection.");
+   showToast("Camera access requires a secure HTTPS connection.", 'warning');
    return;
   }
 
@@ -366,7 +462,7 @@ const i18n = {
    },
    () => {}
   ).catch(err => {
-   alert("Camera permission is required to scan a barcode or camera is unavailable.");
+   showToast("Camera permission is required to scan a barcode or camera is unavailable.", 'warning');
    stopScanner();
   });
  }
@@ -439,10 +535,11 @@ const i18n = {
  async function loadShapes() {
   if (!auth.currentUser) return;
   const docRef = db.collection("users").doc(auth.currentUser.uid);
-  const snap = await docRef.get();
+  let snap = null;
+  try { snap = await fsGet(docRef); } catch (e) { console.warn("Could not load custom shapes:", e); }
   
   userShapes = [...DEFAULT_SHAPES];
-  if (snap.exists && snap.data().customShapes) {
+  if (snap && snap.exists && snap.data().customShapes) {
    const customList = snap.data().customShapes || [];
    customList.forEach(cs => {
     if (!userShapes.some(s => s.name.toLowerCase() === cs.name.toLowerCase())) {
@@ -499,12 +596,12 @@ const i18n = {
   const name = nameInput.value.trim();
   const grp = selectedValues.cshape_grp || 'Fancy';
 
-  if (!name) return alert("Please enter a shape name.");
-  if (userShapes.some(s => s.name.toLowerCase() === name.toLowerCase())) return alert("Shape already exists.");
+  if (!name) return showToast("Please enter a shape name.", 'warning');
+  if (userShapes.some(s => s.name.toLowerCase() === name.toLowerCase())) return showToast("Shape already exists.", 'warning');
 
   userShapes.push({ name, grp });
   const customOnly = userShapes.filter(s => !DEFAULT_SHAPES.some(d => d.name.toLowerCase() === s.name.toLowerCase()));
-  await db.collection("users").doc(auth.currentUser.uid).set({ customShapes: customOnly }, { merge: true });
+  fireWrite(db.collection("users").doc(auth.currentUser.uid).set({ customShapes: customOnly }, { merge: true }));
 
   nameInput.value = '';
 
@@ -515,7 +612,7 @@ const i18n = {
 
   renderCustomShapeList();
   closeModal('addShapeModal');
-  alert("Shape added successfully!");
+  showToast("Shape added successfully!", 'success');
  }
 
  async function deleteCustomShape(shapeName) {
@@ -524,7 +621,7 @@ const i18n = {
   userShapes = userShapes.filter(s => s.name.toLowerCase() !== shapeName.toLowerCase());
   const customOnly = userShapes.filter(s => !DEFAULT_SHAPES.some(d => d.name.toLowerCase() === s.name.toLowerCase()));
 
-  await db.collection("users").doc(auth.currentUser.uid).set({ customShapes: customOnly }, { merge: true });
+  fireWrite(db.collection("users").doc(auth.currentUser.uid).set({ customShapes: customOnly }, { merge: true }));
 
   const deptSelect = document.getElementById('department-select');
   renderShapeDropdown(deptSelect.value);
@@ -551,15 +648,16 @@ async function saveStone() {
       month: document.getElementById('entryDate').value.slice(0,7)
     };
 
-    if (isNaN(s.weight) || s.weight <= 0) { alert("Please enter a valid weight."); return; }
-    if (isNaN(s.price) || s.price < 0) { alert("Please enter a valid rate."); return; }
+    if (isNaN(s.weight) || s.weight <= 0) { showToast("Please enter a valid weight.", 'warning'); return; }
+    if (isNaN(s.price) || s.price < 0) { showToast("Please enter a valid rate.", 'warning'); return; }
 
-    await db.collection("users").doc(auth.currentUser.uid).collection("stones").add(s);
+    fireWrite(db.collection("users").doc(auth.currentUser.uid).collection("stones").add(s)); // saved locally at once, synced when online
     document.getElementById('barcode').value = '';
     document.getElementById('weight').value = '';
     document.getElementById('price').value = '';
     loadReports();
-    alert(navigator.onLine?"Saved!" : "Saved offline! / ઇન્ટરનેટ આવશે એટલે આપોઆપ અપડેટ થઈ જશે");
+    if (navigator.onLine) showToast("Saved!", 'success');
+    else showToast("Saved offline! / ઇન્ટરનેટ આવશે એટલે આપોઆપ અપડેટ થઈ જશે", 'offline');
   } finally {
     btn.disabled = false;
     btn.innerText = originalText;
@@ -572,13 +670,13 @@ async function saveStone() {
   const max = parseFloat(document.getElementById('p_max').value);
   const amt = parseFloat(document.getElementById('p_amt').value);
   
-  if (isNaN(min) || isNaN(max) || isNaN(amt) || min > max) return alert("Please enter valid weight range and price amount.");
+  if (isNaN(min) || isNaN(max) || isNaN(amt) || min > max) return showToast("Please enter valid weight range and price amount.", 'warning');
 
   const overlap = userPrices.some(r => r.grp === selectedValues.grp && r.cut === selectedValues.pcut && ((min >= r.min && min < r.max) || (max > r.min && max <= r.max)));
   if (overlap && !confirm("Warning: Range overlaps with an existing rule. Save anyway?")) return;
 
   const r = { grp: selectedValues.grp, cut: selectedValues.pcut, min, max, amt };
-  await db.collection("users").doc(auth.currentUser.uid).collection("prices").add(r);
+  fireWrite(db.collection("users").doc(auth.currentUser.uid).collection("prices").add(r));
   
   document.getElementById('p_min').value = '';
   document.getElementById('p_max').value = '';
@@ -588,7 +686,7 @@ async function saveStone() {
 
  async function loadPrices() {
   if (!auth.currentUser) return;
-  const snap = await db.collection("users").doc(auth.currentUser.uid).collection("prices").get();
+  const snap = await fsGet(db.collection("users").doc(auth.currentUser.uid).collection("prices"));
   userPrices = []; 
 
   snap.forEach(doc => { 
@@ -633,7 +731,7 @@ async function saveStone() {
   const m = document.getElementById('filterMonth').value;
   const sortVal = document.getElementById('sortOption').value;
   const searchVal = document.getElementById('packetSearch').value.trim().toLowerCase();
-  const snap = await db.collection("users").doc(auth.currentUser.uid).collection("stones").where("month", "==", m).get();
+  const snap = await fsGet(db.collection("users").doc(auth.currentUser.uid).collection("stones").where("month", "==", m));
   
   let stones = [];
   snap.forEach(doc => { 
@@ -697,16 +795,16 @@ async function saveStone() {
    month: document.getElementById('edit-date').value.slice(0,7) 
   }; 
   if (isNaN(data.weight) || data.weight <= 0 || isNaN(data.price) || data.price < 0) {
-   return alert("Please enter valid weight and price values.");
+   return showToast("Please enter valid weight and price values.", 'warning');
   }
-  await db.collection("users").doc(auth.currentUser.uid).collection("stones").doc(id).update(data); 
+  fireWrite(db.collection("users").doc(auth.currentUser.uid).collection("stones").doc(id).update(data)); 
   closeModal('editModal'); 
   loadReports(); 
  }
 
  async function del(c, id, cb) { 
   if(confirm("Delete record?")) { 
-   await db.collection("users").doc(auth.currentUser.uid).collection(c).doc(id).delete(); 
+   fireWrite(db.collection("users").doc(auth.currentUser.uid).collection(c).doc(id).delete()); 
    cb(); 
   } 
  }
@@ -727,7 +825,7 @@ async function saveStone() {
     await navigator.clipboard.writeText(
       shareData.text + "\n" + shareData.url
     );
-    alert("Share link copy થઈ ગઈ છે ✅");
+    showToast("Share link copy થઈ ગઈ છે", 'success');
   }
 });
 // --- PDF REPORT EXPORT ---
@@ -735,11 +833,11 @@ async function saveStone() {
   const btn = document.getElementById('pdfDownloadBtn');
 
   if (!currentReportStones || currentReportStones.length === 0) {
-   alert("No data to export. Pick a month with saved stones first.");
+   showToast("No data to export. Pick a month with saved stones first.", 'warning');
    return;
   }
   if (typeof window.jspdf === 'undefined') {
-   alert("PDF library failed to load. Check your internet connection and try again.");
+   showToast("PDF library failed to load. Check your internet connection and try again.", 'error');
    return;
   }
 
@@ -799,7 +897,7 @@ async function saveStone() {
    doc.save(`diamond-report-${fileMonth}.pdf`);
   } catch (err) {
    console.error("PDF generation failed:", err);
-   alert("Something went wrong while creating the PDF. Please try again.");
+   showToast("Something went wrong while creating the PDF. Please try again.", 'error');
   } finally {
    if (btn) { btn.disabled = false; }
   }
