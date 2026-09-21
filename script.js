@@ -6,7 +6,7 @@ const TOAST_ICONS = {
   info:    '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6v.01"/></svg>',
   offline: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>'
 };
-const TOAST_MIN_TIME = { success: 2000, info: 3000, warning: 2500, error: 2500, offline: 4000 };
+const TOAST_MIN_TIME = { success: 1000, info: 1800, warning: 2000, error: 2500, offline: 2500 };
 
 function removeToast(el, instant) {
   if (!el || el._gone) return;
@@ -43,7 +43,7 @@ function showToast(message, type, duration) {
   el.innerHTML = '<span class="toast-icon">' + TOAST_ICONS[type] + '</span><span class="toast-text"></span><span class="toast-bar"></span>';
   el.querySelector('.toast-text').textContent = text; // textContent: safe even if the message has HTML
 
-  const ms = duration || Math.min(7000, Math.max(TOAST_MIN_TIME[type], text.length * 55));
+  const ms = duration || Math.min(4500, Math.max(TOAST_MIN_TIME[type], text.length * 35));
   el.querySelector('.toast-bar').style.animationDuration = ms + 'ms';
   el.addEventListener('click', () => removeToast(el)); // tap to dismiss
 
