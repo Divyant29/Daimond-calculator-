@@ -6,7 +6,7 @@ const TOAST_ICONS = {
   info:    '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6v.01"/></svg>',
   offline: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>'
 };
-const TOAST_MIN_TIME = { success: 2600, info: 3200, warning: 3600, error: 4500, offline: 4200 };
+const TOAST_MIN_TIME = { success: 2000, info: 3000, warning: 2500, error: 2500, offline: 4000 };
 
 function removeToast(el, instant) {
   if (!el || el._gone) return;
