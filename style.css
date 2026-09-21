@@ -555,9 +555,9 @@ html:not([data-theme="dark"]) select option {
 
 /* PREMIUM TOAST MESSAGES */
 #toast-root {
-  position: fixed; top: calc(env(safe-area-inset-top, 0px) + 72px); left: 0; right: 0;
-  z-index: 20000; display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 0 14px; pointer-events: none;
+  position: fixed; inset: 0;
+  z-index: 20000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: env(safe-area-inset-top, 0px) 14px env(safe-area-inset-bottom, 0px); pointer-events: none;
 }
 .toast {
   --toast-accent: var(--accent);
@@ -570,7 +570,7 @@ html:not([data-theme="dark"]) select option {
   border: 1px solid var(--toast-border); border-radius: 18px; box-shadow: var(--toast-shadow);
   -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
   font-size: 14px; font-weight: 600; line-height: 1.4; letter-spacing: 0.1px;
-  opacity: 0; transform: translateY(-14px) scale(0.97);
+  opacity: 0; transform: translateY(12px) scale(0.92);
   transition: opacity 0.28s ease, transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 [data-theme="dark"] .toast {
@@ -578,7 +578,7 @@ html:not([data-theme="dark"]) select option {
   --toast-border: rgba(148,163,184,0.24); --toast-shadow: 0 14px 36px rgba(2,6,23,0.65);
 }
 .toast.show { opacity: 1; transform: none; }
-.toast.hide { opacity: 0; transform: translateY(-10px) scale(0.97); transition-duration: 0.22s; }
+.toast.hide { opacity: 0; transform: translateY(6px) scale(0.95); transition-duration: 0.20s; }
 .toast-success { --toast-accent: #10b981; }
 .toast-error   { --toast-accent: #ef4444; }
 .toast-warning { --toast-accent: #f59e0b; }
