@@ -1,5 +1,5 @@
 // CHANGE THIS VERSION NUMBER EVERY TIME YOU PUSH TO GITHUB
-const CACHE_NAME = 'diamond-calc-v1.0.16'; 
+const CACHE_NAME = 'diamond-calc-v1.0.17'; 
 
 // Must-have files: if one of these fails, the install stops
 const CORE_ASSETS = [
