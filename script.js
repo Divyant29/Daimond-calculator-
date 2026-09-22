@@ -892,25 +892,46 @@ async function saveStone() {
   } 
  }
 
- // shere button
- document.getElementById("shareAppBtn").addEventListener("click", async () => {
-  const shareData = {
-    title: "Diamond Calculator",
-    text: "💎 3x ના કારીગર ભાઈઓ માટે હીરાનો હિસાબ કરવાની FREE એપ!\n\nડાયરીમાં હિસાબ લખવાની ઝંઝટ ખતમ 📱\n\n👇🏻 એપ અહીંથી મેળવો:",
-    url: "https://divyant29.github.io/Daimond-calculator-/"
-  };
+// shere button
+async function shareApp() {
+ const shareData = {
+   title: "Diamond Calculator",
+   text: "💎 3x ના કારીગર ભાઈઓ માટે હીરાનો હિસાબ કરવાની FREE એપ!\n\nડાયરીમાં હિસાબ લખવાની ઝંઝટ ખતમ 📱\n\n👇🏻 એપ અહીંથી મેળવો:",
+   url: "https://divyant29.github.io/Daimond-calculator-/"
+ };
 
-  if (navigator.share) {
-    try {
-      await navigator.share(shareData);
-    } catch (error) {}
-  } else {
-    await navigator.clipboard.writeText(
-      shareData.text + "\n" + shareData.url
-    );
-    showToast("Share link copy થઈ ગઈ છે", 'success');
-  }
-});
+ if (navigator.share) {
+   try {
+     await navigator.share(shareData);
+   } catch (error) {}
+ } else {
+   await navigator.clipboard.writeText(
+     shareData.text + "\n" + shareData.url
+   );
+   showToast("Share link copy થઈ ગઈ છે", 'success');
+ }
+}
+
+document.getElementById("shareAppBtn").addEventListener("click", shareApp);
+
+// referral banner (shows once per day, not naggy)
+(function () {
+ const banner = document.getElementById('referral-banner');
+ const lastShown = localStorage.getItem('referralBannerLastShown');
+ const today = new Date().toDateString();
+ if (banner && lastShown !== today) {
+  banner.style.display = 'flex';
+ }
+ document.getElementById('referral-share-btn')?.addEventListener('click', () => {
+  shareApp();
+  localStorage.setItem('referralBannerLastShown', today);
+  banner.style.display = 'none';
+ });
+ document.getElementById('referral-close')?.addEventListener('click', () => {
+  localStorage.setItem('referralBannerLastShown', today);
+  banner.style.display = 'none';
+ });
+})();
 // --- PDF REPORT EXPORT ---
  function generatePDFReport() {
   const btn = document.getElementById('pdfDownloadBtn');
