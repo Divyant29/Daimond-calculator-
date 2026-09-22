@@ -141,7 +141,7 @@ const i18n = {
 
  function showInstallBanner() {
   if (sessionStorage.getItem('installBannerDismissed')) return; // hidden for this session only
-  document.getElementById('install-banner').style.display = 'block';
+  document.getElementById('install-banner').style.display = 'flex';
  }
 
  function dismissInstallBanner() {
@@ -894,7 +894,7 @@ async function saveStone() {
   const shareData = {
     title: "Diamond Calculator",
     text: "💎 3x ના કારીગર ભાઈઓ માટે હીરાનો હિસાબ કરવાની FREE એપ!\n\nડાયરીમાં હિસાબ લખવાની ઝંઝટ ખતમ 📱\n\n👇🏻 એપ અહીંથી મેળવો:",
-    url: "https://github.com/divyant29/Daimond-calculator-/releases/download/v1.0.0/DiamondCalc-unsigned.apk"
+    url: "https://divyant29.github.io/Daimond-calculator-/"
   };
 
   if (navigator.share) {
