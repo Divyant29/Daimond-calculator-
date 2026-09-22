@@ -146,6 +146,21 @@
    <button class="btn btn-blue" onclick="closeModal('termsModal')">Close</button>
   </div>
  </div>
+ <div class="modal-overlay" id="tutorialModal">
+  <div class="modal-card" style="max-width: 480px; position: relative;">
+   <span onclick="closeTutorialModal()" style="position:absolute; top:12px; right:16px; font-size:22px; font-weight:800; cursor:pointer; opacity:0.8; z-index:2;">✕</span>
+   <h3>🎥 App કેવી રીતે વાપરવી</h3>
+   <video 
+    id="tutorialVideo"
+    controls 
+    playsinline
+    style="width:100%; border-radius:10px; margin:15px 0; background:#000;">
+    <source src="./tutorial.mp4" type="video/mp4">
+    <track src="./tutorial.vtt" kind="subtitles" srclang="gu" label="ગુજરાતી" default>
+   </video>
+   <button class="btn btn-blue" onclick="closeTutorialModal()">Close</button>
+  </div>
+ </div>
 
  <!-- EDIT RECORD MODAL -->
  <div class="modal-overlay" id="editModal">
