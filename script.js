@@ -480,9 +480,25 @@ if (isIOS && !isStandalone && !alreadyInstalled) {
   document.getElementById(id).classList.add('active');
  }
 
+
  function openHelpModal() { openModal('helpModal'); }
  function openFounderModal() { openModal('founderModal'); }
  function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
+function closeTutorialModal() {
+ closeModal('tutorialModal');
+ const vid = document.getElementById('tutorialVideo');
+ if (vid) vid.pause();
+ localStorage.setItem('tutorialSeen', 'true');
+}
+
+// Show tutorial video once, for first-time users only
+window.addEventListener('load', () => {
+ setTimeout(() => {
+  if (!localStorage.getItem('tutorialSeen')) {
+   openModal('tutorialModal');
+  }
+ }, 3500); // 3.5s delay — lets splash/app render first, doesn't block first impression
+});
 
  function showTab(id) {
   document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
