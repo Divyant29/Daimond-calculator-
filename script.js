@@ -149,33 +149,36 @@ const i18n = {
   sessionStorage.setItem('installBannerDismissed', 'true'); // reappears next time app is opened
  }
 
- window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  showInstallBanner();
- });
-
- async function installApp() {
-  if (!deferredInstallPrompt) {
-   showToast("To install: tap the Share button in your browser, then 'Add to Home Screen'.", 'info', 6000);
-   return;
-  }
-  deferredInstallPrompt.prompt();
-  const { outcome } = await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt = null;
-  document.getElementById('install-banner').style.display = 'none';
- }
-
- window.addEventListener('appinstalled', () => {
-  document.getElementById('install-banner').style.display = 'none';
-  sessionStorage.removeItem('installBannerDismissed');
- });
-
  const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
- const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
- if (isIOS && !isStandalone) {
-  showInstallBanner();
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+const alreadyInstalled = localStorage.getItem('appInstalled') === 'true';
+
+window.addEventListener('beforeinstallprompt', (e) => {
+ e.preventDefault();
+ deferredInstallPrompt = e;
+ if (!isStandalone && !alreadyInstalled) showInstallBanner();
+});
+
+async function installApp() {
+ if (!deferredInstallPrompt) {
+  showToast("To install: tap the Share button in your browser, then 'Add to Home Screen'.", 'info', 6000);
+  return;
  }
+ deferredInstallPrompt.prompt();
+ const { outcome } = await deferredInstallPrompt.userChoice;
+ deferredInstallPrompt = null;
+ document.getElementById('install-banner').style.display = 'none';
+}
+
+window.addEventListener('appinstalled', () => {
+ document.getElementById('install-banner').style.display = 'none';
+ sessionStorage.removeItem('installBannerDismissed');
+ localStorage.setItem('appInstalled', 'true');
+});
+
+if (isIOS && !isStandalone && !alreadyInstalled) {
+ showInstallBanner();
+}
 
  // --- SERVICE WORKER & AUTOMATIC UPDATE ENGINE ---
  let newWorker = null;
