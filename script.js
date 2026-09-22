@@ -152,6 +152,7 @@ const i18n = {
  const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 const alreadyInstalled = localStorage.getItem('appInstalled') === 'true';
+showToast('standalone:' + isStandalone + ' | installed:' + alreadyInstalled, 'info', 10000);
 
 window.addEventListener('beforeinstallprompt', (e) => {
  e.preventDefault();
