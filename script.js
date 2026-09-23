@@ -910,24 +910,42 @@ async function saveStone() {
 
 // shere button
 async function shareApp() {
- const shareData = {
-   title: "Diamond Calculator",
-   text: "💎 3x ના કારીગર ભાઈઓ માટે હીરાનો હિસાબ કરવાની FREE એપ!\n\nડાયરીમાં હિસાબ લખવાની ઝંઝટ ખતમ 📱\n\n👇🏻 એપ અહીંથી મેળવો:",
-   url: "https://divyant29.github.io/Daimond-calculator-/"
- };
+  const shareData = {
+    title: "ડાયમંડ કેલ્ક્યુલેટર",
+    text: "💎 3x ના કારીગર ભાઈઓ માટે હીરાનો હિસાબ કરવાની FREE એપ!\n\nડાયરીમાં હિસાબ લખવાની ઝંઝટ ખતમ 📱\n\n👇🏻 એપ અહીંથી મેળવો:",
+    url: "https://divyant29.github.io/Daimond-calculator-/"
+  };
 
- if (navigator.share) {
-   try {
-     await navigator.share(shareData);
-   } catch (error) {}
- } else {
-   await navigator.clipboard.writeText(
-     shareData.text + "\n" + shareData.url
-   );
-   showToast("Share link copy થઈ ગઈ છે", 'success');
- }
+  if (navigator.share) {
+    try {
+      const response = await fetch("tutorial.mp4");
+      const blob = await response.blob();
+
+      const videoFile = new File(
+        [blob],
+        "tutorial.mp4",
+        { type: "video/mp4" }
+      );
+
+      if (navigator.canShare && navigator.canShare({ files: [videoFile] })) {
+        await navigator.share({
+          ...shareData,
+          files: [videoFile]
+        });
+      } else {
+        await navigator.share(shareData);
+      }
+
+    } catch (error) {
+      // User cancelled sharing
+    }
+  } else {
+    await navigator.clipboard.writeText(
+      shareData.text + "\n" + shareData.url
+    );
+    showToast("શેર લિંક કોપી થઈ ગઈ છે", 'success');
+  }
 }
-
 document.getElementById("shareAppBtn").addEventListener("click", shareApp);
 
 // referral banner (shows once per day, not naggy)
