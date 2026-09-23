@@ -212,12 +212,14 @@ if (isIOS && !isStandalone && !alreadyInstalled) {
   navigator.serviceWorker.register('sw.js').then(watchForUpdates).catch(() => {});
  }
 
- // Look for a new version whenever the app comes back to the screen (at most once per 30 min)
+ //Look for a new version whenever the app comes back to the screen (at most once per 30 min)
  function checkForUpdateSilently() {
   if (!swReg || !navigator.onLine) return;
   if (Date.now() - lastUpdateCheck < 30 * 60 * 1000) return;
   lastUpdateCheck = Date.now();
-  swReg.update().catch(() => {});
+  swReg.update().then(() => {
+   if (swReg.waiting) showUpdateBanner(swReg.waiting);
+  }).catch(() => {});
  }
  document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') checkForUpdateSilently();
