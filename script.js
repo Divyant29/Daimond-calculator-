@@ -329,7 +329,6 @@ const bannerSpan = bannerElement?.querySelector('span');
 if (bannerSpan) {
     bannerSpan.textContent = bannerText;
 }
-}
   const greetings = {
    en: `Hello, ${userName} 👋`,
    gu: `નમસ્તે, ${userName} 👋`
