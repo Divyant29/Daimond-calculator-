@@ -324,8 +324,11 @@ if (isIOS && !isStandalone && !alreadyInstalled) {
    const bannerText = `કેમ છો ${userName} ભાઈ.. 5 જણાને એપ્લિકેશન શેર કરશો ને? 😉`;
 
 const bannerElement = document.getElementById('banner-text');
-if (bannerElement) {
-    bannerElement.innerText = bannerText;
+const bannerSpan = bannerElement?.querySelector('span');
+
+if (bannerSpan) {
+    bannerSpan.textContent = bannerText;
+}
 }
   const greetings = {
    en: `Hello, ${userName} 👋`,
