@@ -696,8 +696,12 @@ html:not([data-theme="dark"]) select option {
 .ad-image-wrapper {
   position: relative;
   width: 100%;
+  min-height: 90px;
   overflow: hidden;
   border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ad-image-wrapper img {
@@ -727,10 +731,10 @@ html:not([data-theme="dark"]) select option {
 }
 
 @keyframes adTextMove {
-  0% {
+  from {
     transform: translateX(0);
   }
-  100% {
+  to {
     transform: translateX(-100%);
   }
 }
