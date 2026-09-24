@@ -321,6 +321,12 @@ if (isIOS && !isStandalone && !alreadyInstalled) {
 
  function applyFullLanguage(langKey) {
   const userName = getUserFirstName();
+   const bannerText = `કેમ છો ${userName} ભાઈ.. 5 જણાને એપ્લિકેશન શેર કરશો ને? 😉`;
+
+const bannerElement = document.getElementById('banner-text');
+if (bannerElement) {
+    bannerElement.innerText = bannerText;
+}
   const greetings = {
    en: `Hello, ${userName} 👋`,
    gu: `નમસ્તે, ${userName} 👋`
