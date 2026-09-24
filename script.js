@@ -502,7 +502,8 @@ function closeTutorialModal() {
 window.addEventListener('load', () => {
  setTimeout(() => {
   if (!localStorage.getItem('tutorialSeen')) {
-   openModal('tutorialModal');
+    localStorage.setItem('tutorialSeen', 'true');
+    openModal('tutorialModal');
   }
  }, 3500); // 3.5s delay — lets splash/app render first, doesn't block first impression
 });
