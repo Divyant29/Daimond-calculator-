@@ -261,8 +261,13 @@ if (isIOS && !isStandalone && !alreadyInstalled) {
   const keep = {};
   for (let i = 0; i < localStorage.length; i++) {
    const k = localStorage.key(i);
-   if (k === 'appLang' || k === 'theme' || k.indexOf('lastPrefetch_') === 0) keep[k] = localStorage.getItem(k);
-  }
+   if (
+  k === 'appLang' ||
+  k === 'theme' ||
+  k === 'tutorialSeen' ||
+  k.indexOf('lastPrefetch_') === 0
+)
+    keep[k] = localStorage.getItem(k);  }
   localStorage.clear();
   Object.keys(keep).forEach(k => localStorage.setItem(k, keep[k]));
 
@@ -915,7 +920,7 @@ async function shareApp() {
   const shareData = {
     title: "ડાયમંડ કેલ્ક્યુલેટર",
     text: "💎 3x ના કારીગર ભાઈઓ માટે હીરાનો હિસાબ કરવાની FREE એપ!\n\nડાયરીમાં હિસાબ લખવાની ઝંઝટ ખતમ 📱\n\n👇🏻 એપ અહીંથી મેળવો:",
-    url: "https://divyant29.github.io/Daimond-calculator-/"
+    url: "https://diamondcalc.co.in"
   };
 
   if (navigator.share) {
