@@ -357,8 +357,41 @@ if (bannerSpan) {
   messagingSenderId: "1076337600089", 
   appId: "1:1076337600089:web:dce0e8433eb4551c563348" 
  };
- firebase.initializeApp(firebaseConfig);
- const auth = firebase.auth(), db = firebase.firestore();
+ // Safety net: if Firebase never loads/responds (blocked CDN, no network,
+ // ad-blocker, misconfigured project, etc.) the splash screen used to spin
+ // forever because it was only ever hidden inside auth.onAuthStateChanged.
+ // Force it away after a timeout and show the user what happened instead.
+ let __authResolved = false;
+ const __loadingWatchdog = setTimeout(() => {
+  if (__authResolved) return;
+  const loadingEl = document.getElementById('app-loading');
+  if (loadingEl) loadingEl.style.display = 'none';
+  const authScreen = document.getElementById('auth-screen');
+  if (authScreen) authScreen.style.display = 'flex';
+  showToast(
+   navigator.onLine
+    ? 'Could not connect to the server. Please try again.'
+    : 'You appear to be offline. Check your connection and try again.',
+   'error',
+   6000
+  );
+ }, 10000);
+
+ let auth, db;
+ try {
+  if (typeof firebase === 'undefined') throw new Error('Firebase SDK failed to load (check your network/ad-blocker).');
+  firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+ } catch (e) {
+  console.error('Firebase init failed:', e);
+  clearTimeout(__loadingWatchdog);
+  const loadingEl = document.getElementById('app-loading');
+  if (loadingEl) loadingEl.style.display = 'none';
+  const authScreen = document.getElementById('auth-screen');
+  if (authScreen) authScreen.style.display = 'flex';
+  showToast('App failed to start: ' + e.message, 'error', 6000);
+ }
  try { db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED }); } catch (e) { console.warn(e); } // keep ALL saved entries on the phone
  db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
   if (err.code === 'failed-precondition') {
@@ -530,7 +563,9 @@ window.addEventListener('load', () => {
    try { await auth.signInWithPopup(provider); } catch(e) { showToast(e.message, 'error'); }
 }
 
-  auth.onAuthStateChanged(async u => {
+  if (auth) auth.onAuthStateChanged(async u => {
+  __authResolved = true;
+  clearTimeout(__loadingWatchdog);
   document.getElementById('app-loading').style.display = 'none';
   document.getElementById('auth-screen').style.display = u ? 'none' : 'flex';
   document.getElementById('main-app').style.display = u ? 'block' : 'none';
