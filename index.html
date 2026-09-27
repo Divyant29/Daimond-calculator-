@@ -244,7 +244,18 @@
  <div id="main-app" style="display: block !important;">
   <!-- TAB 1: ENTRY -->
   <div id="entry" class="container active">
-   <h2 id="greeting-text">Hello 👋</h2>
+ <!-- PERSONALIZED GREETING -->
+  <section id="greeting-card" aria-label="Welcome">
+    <button id="profile-photo-btn" type="button" onclick="changeProfilePhoto()" aria-label="Change profile photo">
+      <img id="profile-photo" alt="Profile photo">
+      <span id="profile-photo-fallback">👤</span>
+    </button>
+    <div class="greeting-copy">
+      <div class="greeting-title-window"><h2 id="greeting-text">Hello 👋</h2></div>
+      <p id="greeting-subtitle">તમારું સ્વાગત છે!</p>
+    </div>
+  </section>
+  <input type="file" id="profile-photo-input" accept="image/*" hidden>
 
    <!-- REFERRAL BANNER -->
    <div id="referral-banner">
@@ -252,33 +263,8 @@
     <button id="referral-share-btn">📤 Share Karo</button>
     <span id="referral-close" class="referral-close">✕</span>
    </div>
-
-   <!-- ADSENSE UNIT PLACEHOLDER -->
-
-   <!-- ADSENSE UNIT PLACEHOLDER -->
+   <!-- ADSENSE UNIT PLACEHOLDER reserve for google ads-->
   <div class="adsense-box" id="adsense-container">
-
-  <a href="https://wa.me/918460393585"
-     target="_blank"
-     style="display:block; width:100%; height:100%; text-decoration:none;">
-
-    <div class="ad-image-wrapper">
-
-      <img
-        src="./banner.png"
-        alt=""
-        onerror="this.style.display='none';"
-      >
-
-      <div class="ad-scrolling-text" id="banner-text">
-        <span>કેમ છો ભાઈ.. 5 જણાને એપ્લિકેશન શેર કરી કે નહીં 🤔? ફટાફટ શેર કરો 🤗</span>
-      </div>
-
-    </div>
-
-  </a>
-
-  </div>
 
    <div class="main-card">
     <label class="input-label" for="barcode" data-i18n="packetNo">Packet Number</label>
