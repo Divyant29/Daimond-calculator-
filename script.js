@@ -321,7 +321,7 @@ if (isIOS && !isStandalone && !alreadyInstalled) {
 
  function applyFullLanguage(langKey) {
   const userName = getUserFirstName();
-   const bannerText = `કેમ છો ${userName} ભાઈ.. 5 જણાને એપ્લિકેશન શેર કરી કે નહીં 🤔? ફટાફટ શેર કરો 🤗 `;
+   const bannerText = `કેમ છો ${userName} ભાઈ.. એપ્લિકેશન માં કઈ પ્રોબ્લેમ આવતી હોય તો જણાવજો (અહીંયા ક્લિક કરો 👈🏻) `;
 
 const bannerElement = document.getElementById('banner-text');
 const bannerSpan = bannerElement?.querySelector('span');
